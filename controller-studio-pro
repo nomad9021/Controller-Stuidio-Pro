@@ -99,6 +99,7 @@ class Window(Gtk.Window):
         self.connect("window-state-event", self.on_state)
         self._blur_pending = False
         self._last_region = None
+        self.blur = False  # the page turns this on when "Blur behind window" is set
 
     # ---- KWin blur behind the see-through areas
 
@@ -112,13 +113,20 @@ class Window(Gtk.Window):
         gdk_win = self.get_window()
         if not gdk_win or not hasattr(gdk_win, "get_xid"):
             return False
+        xid = str(gdk_win.get_xid())
+        if not self.blur:
+            if self._last_region != "off":
+                self._last_region = "off"
+                subprocess.run(["xprop", "-id", xid, "-remove", "_KDE_NET_WM_BLUR_BEHIND_REGION"],
+                               check=False, capture_output=True)
+            return False
         scale = self.get_scale_factor()
         w, h = self.get_size()
         region = rounded_region(w * scale, h * scale, 0 if self.maximized else RADIUS * scale)
         if region != self._last_region:
             self._last_region = region
             value = ",".join(str(int(v)) for rect in region for v in rect)
-            subprocess.run(["xprop", "-id", str(gdk_win.get_xid()), "-f", "_KDE_NET_WM_BLUR_BEHIND_REGION",
+            subprocess.run(["xprop", "-id", xid, "-f", "_KDE_NET_WM_BLUR_BEHIND_REGION",
                             "32c", "-set", "_KDE_NET_WM_BLUR_BEHIND_REGION", value],
                            check=False, capture_output=True)
         return False
@@ -148,6 +156,10 @@ class Window(Gtk.Window):
             self.unmaximize() if self.maximized else self.maximize()
         elif msg == "close":
             self.close()
+        elif msg.startswith("blur:"):
+            self.blur = msg == "blur:1"
+            self._last_region = None
+            self.queue_blur()
 
     def load(self, extra_hash=""):
         query = {

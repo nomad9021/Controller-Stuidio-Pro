@@ -145,7 +145,7 @@ DEFAULT_SETTINGS = {
     "lighting": {"mode": "preset", "color": "#2f6bff", "effect": "solid", "speed": 5,
                  "brightness": 100, "player_leds": "center"},
     "output": {"virtual": False, "map": {"paddle_left": "", "paddle_right": "", "fn_left": "", "fn_right": ""}},
-    "app": {"glass": 70},
+    "app": {"glass": 25, "blur": False},
 }
 
 
@@ -190,7 +190,7 @@ def migrate_v1(p):
 class PresetStore:
     def __init__(self):
         self.lock = threading.Lock()
-        self.data = {"active": "motorfest", "overrides": {}, "custom": [], "telemetry_port": 5300,
+        self.data = {"active": "motorfest", "overrides": {}, "custom": [], "hidden": [], "telemetry_port": 5300,
                      "settings": copy.deepcopy(DEFAULT_SETTINGS)}
         for path in (STORE, _OLD_STORE):
             try:
@@ -238,6 +238,8 @@ class PresetStore:
         with self.lock:
             out = []
             for p in BUILTIN:
+                if p["id"] in self.data.get("hidden", []):
+                    continue
                 cur = copy.deepcopy(self.data["overrides"].get(p["id"], p))
                 cur.update(builtin=True, modified=p["id"] in self.data["overrides"])
                 out.append(cur)
@@ -294,13 +296,30 @@ class PresetStore:
         return self.get(new["id"])
 
     def delete(self, pid):
+        if len(self.all()) <= 1:
+            raise ValueError("Keep at least one preset")
         with self.lock:
-            if pid in BUILTIN_IDS:
-                raise ValueError("built-in presets can't be deleted")
-            self.data["custom"] = [p for p in self.data["custom"] if p["id"] != pid]
-            if self.data["active"] == pid:
-                self.data["active"] = "off"
+            if pid in BUILTIN_IDS:                  # built-ins are hidden so they can be restored
+                hidden = self.data.setdefault("hidden", [])
+                if pid not in hidden:
+                    hidden.append(pid)
+                self.data["overrides"].pop(pid, None)
+            else:
+                self.data["custom"] = [p for p in self.data["custom"] if p["id"] != pid]
+        remaining = [p["id"] for p in self.all()]
+        with self.lock:
+            if self.data["active"] not in remaining:
+                self.data["active"] = "off" if "off" in remaining else remaining[0]
             self._save()
+
+    def restore_builtins(self):
+        with self.lock:
+            self.data["hidden"] = []
+            self._save()
+
+    @property
+    def hidden_count(self):
+        return len(self.data.get("hidden", []))
 
     def reset(self, pid):
         with self.lock:

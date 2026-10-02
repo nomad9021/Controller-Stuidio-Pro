@@ -101,7 +101,7 @@ class Handler(BaseHTTPRequestHandler):
     def _status(self):
         return dict(engine.snapshot(), active=store.active_id, presets=store.all(),
                     settings=store.settings, moonlight_hidden=moonlight_hidden(),
-                    app_dir=os.path.dirname(WEB), ips=local_ips())
+                    app_dir=os.path.dirname(WEB), ips=local_ips(), hidden_builtins=store.hidden_count)
 
     def do_GET(self):
         path = self.path.split("?")[0]
@@ -158,6 +158,8 @@ class Handler(BaseHTTPRequestHandler):
                 engine.set_settings(settings)
                 if settings["output"]["virtual"] != before or body.get("fix_moonlight"):
                     set_moonlight_hidden(settings["output"]["virtual"])
+            elif path == "/api/presets/restore":
+                store.restore_builtins()
             elif m := re.fullmatch(r"/api/presets/([\w-]+)/duplicate", path):
                 return self._json(store.duplicate(m[1]))
             elif m := re.fullmatch(r"/api/presets/([\w-]+)/reset", path):

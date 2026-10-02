@@ -34,7 +34,7 @@ const WHEN_TEXT = {
 const INSTANT = new Set(["buttons", "gear", "slam"]);
 const FMT = {
   pct: v => v + "%", zone: v => v * 10 + "%", ms: v => v + " ms", hz: v => v + " Hz",
-  glass: v => (v < 40 ? "Clear" : v < 70 ? "Balanced" : "Frosted"),
+  glass: v => (v < 15 ? "Clear" : v < 45 ? "Light" : v < 75 ? "Balanced" : "Frosted"),
   curve: v => (v == 0 ? "Linear" : v > 0 ? `Gentle ${v}` : `Quick ${-v}`),
 };
 
@@ -124,9 +124,23 @@ function renderSidebar() {
       badge.className = "nav-badge"; badge.textContent = "In Use";
       b.append(badge);
     }
+    if (status.presets.length > 1) {
+      const del = document.createElement("span");
+      del.className = "row-del"; del.setAttribute("role", "button"); del.tabIndex = 0;
+      del.setAttribute("aria-label", "Delete " + p.name);
+      del.title = "Delete preset";
+      del.innerHTML = `<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M3 3l6 6M9 3l-6 6"/></svg>`;
+      const go = e => { e.stopPropagation(); e.preventDefault(); askDelete(p); };
+      del.addEventListener("click", go);
+      del.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") go(e); });
+      b.append(del);
+    }
     li.append(b);
     return li;
   }));
+  const restore = $("#restore-presets");
+  restore.hidden = !status.hidden_builtins;
+  $("span", restore).textContent = `Restore built-in presets (${status.hidden_builtins})`;
   $$(".nav-row").forEach(b => {
     b.onclick = () => select(b.dataset.view);
     if (b.dataset.view === view) b.setAttribute("aria-current", "page");
@@ -204,7 +218,7 @@ function renderPreset() {
   $("#use-preset").hidden = active;
   $("#in-use").hidden = !active;
   $("#act-reset").disabled = !(p.builtin && p.modified);
-  $("#act-delete").disabled = !!p.builtin;
+  $("#act-delete").disabled = status.presets.length <= 1;
   document.documentElement.style.setProperty("--tint", p.lightbar);
   bind($("#view-preset .card.span"), "p", p, (path, v, structural) => {
     setPath(draft, path, v);
@@ -446,12 +460,30 @@ async function duplicate(id) {
 $("#act-duplicate").onclick = () => duplicate(draft.id);
 $("#new-preset").onclick = () => duplicate(draft ? draft.id : status.active);
 $("#act-reset").onclick = async () => { status = await api("POST", `/api/presets/${draft.id}/reset`); select(view); };
-$("#act-delete").onclick = () => { $("#confirm-title").textContent = `Delete “${draft.name}”?`; $("#confirm").showModal(); };
+let pendingDelete = null;
+function askDelete(p) {
+  pendingDelete = p;
+  $("#confirm-title").textContent = `Delete “${p.name}”?`;
+  $("#confirm-body").textContent = p.builtin
+    ? "It's a built-in preset, so you can bring it back later with Restore built-in presets."
+    : "This can't be undone.";
+  $("#confirm").returnValue = "";
+  $("#confirm").showModal();
+}
+$("#act-delete").onclick = () => askDelete(draft);
 $("#confirm").addEventListener("close", async () => {
-  if ($("#confirm").returnValue !== "ok") return;
-  status = await api("DELETE", "/api/presets/" + draft.id);
-  select("preset:" + status.active);
+  if ($("#confirm").returnValue !== "ok" || !pendingDelete) return;
+  const id = pendingDelete.id;
+  pendingDelete = null;
+  try { status = await api("DELETE", "/api/presets/" + id); }
+  catch (e) { banner(e.message); return; }
+  if (view === "preset:" + id || !view.startsWith("preset:")) select(view === "preset:" + id ? "preset:" + status.active : view);
+  else renderSidebar();
 });
+$("#restore-presets").onclick = async () => {
+  status = await api("POST", "/api/presets/restore");
+  renderSidebar();
+};
 $("#act-rename").onclick = () => {
   $("#rename-name").value = draft.name;
   $("#rename-summary").value = draft.summary || "";
@@ -777,8 +809,10 @@ function playSplash() {
 }
 
 function applyGlass() {
-  const g = status && status.settings.app ? status.settings.app.glass : 60;
-  document.documentElement.style.setProperty("--frost", g / 100);
+  const a = (status && status.settings.app) || { glass: 25, blur: false };
+  document.documentElement.style.setProperty("--frost", a.glass / 100);
+  document.documentElement.classList.toggle("clear", a.glass < 35);
+  if (host) host.postMessage(a.blur ? "blur:1" : "blur:0");
 }
 
 // Frameless window: the native host draws nothing, so the page provides drag, resize and buttons.
