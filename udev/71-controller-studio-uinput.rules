@@ -1,0 +1,2 @@
+# Let the logged-in user create virtual controllers (Controller Studio Pro's remapped output)
+KERNEL=="uinput", SUBSYSTEM=="misc", MODE="0660", TAG+="uaccess", OPTIONS+="static_node=uinput"

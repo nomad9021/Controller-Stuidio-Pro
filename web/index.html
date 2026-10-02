@@ -1,0 +1,541 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Controller Studio Pro</title>
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<div class="ambient" aria-hidden="true"><i class="blob b1"></i><i class="blob b2"></i><i class="blob b3"></i></div>
+
+<!-- ===================== Startup ===================== -->
+<div class="splash" id="splash" aria-hidden="true">
+  <svg class="boot" viewBox="0 0 640 400">
+    <g class="boot-detail">
+      <rect x="222" y="70" width="196" height="104" rx="16"/>
+      <circle cx="232" cy="214" r="26"/><circle cx="408" cy="214" r="26"/>
+      <path d="M118 104h24v26l-12 12-12-12zM118 196h24v-26l-12-12-12 12zM84 138v24h26l12-12-12-12zM176 138v24h-26l-12-12 12-12z"/>
+      <circle cx="510" cy="116" r="15"/><circle cx="544" cy="150" r="15"/><circle cx="510" cy="184" r="15"/><circle cx="476" cy="150" r="15"/>
+      <rect x="100" y="42" width="100" height="14" rx="7"/><rect x="440" y="42" width="100" height="14" rx="7"/>
+    </g>
+    <path class="boot-trail" d="M170 66C120 66 92 82 76 118L32 290C20 340 52 386 96 381C126 378 141 356 156 331L200 262C210 249 224 245 240 245H400C416 245 430 249 440 262L484 331C499 356 514 378 544 381C588 386 620 340 608 290L564 118C548 82 520 66 470 66Z"/>
+    <defs><filter id="boot-glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="7"/></filter></defs>
+    <path class="boot-glow" filter="url(#boot-glow)" d="M170 66C120 66 92 82 76 118L32 290C20 340 52 386 96 381C126 378 141 356 156 331L200 262C210 249 224 245 240 245H400C416 245 430 249 440 262L484 331C499 356 514 378 544 381C588 386 620 340 608 290L564 118C548 82 520 66 470 66Z"/>
+    <path class="boot-comet" d="M170 66C120 66 92 82 76 118L32 290C20 340 52 386 96 381C126 378 141 356 156 331L200 262C210 249 224 245 240 245H400C416 245 430 249 440 262L484 331C499 356 514 378 544 381C588 386 620 340 608 290L564 118C548 82 520 66 470 66Z"/>
+  </svg>
+</div>
+
+<!-- Window edges for resizing (frameless window) -->
+<div class="edges" aria-hidden="true">
+  <i data-edge="n"></i><i data-edge="s"></i><i data-edge="e"></i><i data-edge="w"></i>
+  <i data-edge="ne"></i><i data-edge="nw"></i><i data-edge="se"></i><i data-edge="sw"></i>
+</div>
+
+<div class="app" id="app">
+  <div class="ambient" aria-hidden="true"><i class="blob b1"></i><i class="blob b2"></i><i class="blob b3"></i></div>
+  <header class="titlebar" data-drag>
+    <img class="tb-icon" src="icon.svg" alt="" width="18" height="18">
+    <span class="tb-title">Controller Studio Pro</span>
+    <span class="tb-sub" id="tb-sub"></span>
+    <div class="tb-buttons" role="group" aria-label="Window">
+      <button class="tb-btn" data-win="minimize" type="button" aria-label="Minimize"><svg viewBox="0 0 10 10"><path d="M0 5h10"/></svg></button>
+      <button class="tb-btn" data-win="maximize" type="button" aria-label="Maximize"><svg viewBox="0 0 10 10"><rect class="max" x=".5" y=".5" width="9" height="9"/><path class="restore" d="M2.5 .5h7v7M.5 2.5h7v7h-7z"/></svg></button>
+      <button class="tb-btn close" data-win="close" type="button" aria-label="Close"><svg viewBox="0 0 10 10"><path d="M0 0l10 10M10 0 0 10"/></svg></button>
+    </div>
+  </header>
+  <nav class="sidebar glass" aria-label="Sections" data-drag>
+    <div class="device" id="device" role="status" aria-live="polite">
+      <div class="device-glow" aria-hidden="true"></div>
+      <div class="device-text">
+        <div class="device-name" id="device-name">No controller</div>
+        <div class="device-meta" id="device-meta">Press the PS button to connect</div>
+      </div>
+      <div class="battery" id="battery" role="img" aria-label="Battery">
+        <div class="batt-body"><i class="batt-fill"></i><span class="batt-num" id="batt-num"></span>
+          <svg class="batt-bolt" viewBox="0 0 10 14" aria-hidden="true"><path d="M6 0 1 8h3.5L3.5 14 9 5.5H5.5z"/></svg></div>
+        <i class="batt-cap"></i>
+      </div>
+    </div>
+
+    <h2 class="group">Presets</h2>
+    <ul class="nav" id="preset-list" role="list"></ul>
+    <button class="nav-add" id="new-preset" type="button">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3v10M3 8h10"/></svg>
+      New Preset from Selected
+    </button>
+
+    <h2 class="group">Device</h2>
+    <ul class="nav" role="list">
+      <li><button class="nav-row" data-view="lighting" type="button">
+        <svg class="nav-icon" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3.5a5 5 0 0 0-2.8 9.1c.5.4.8.9.8 1.5V15h4v-.9c0-.6.3-1.1.8-1.5A5 5 0 0 0 10 3.5zM8 17.5h4"/></svg>
+        <span>Lighting</span></button></li>
+      <li><button class="nav-row" data-view="output" type="button">
+        <svg class="nav-icon" viewBox="0 0 20 20" aria-hidden="true"><path d="M3 10h9M9 6.5 12.5 10 9 13.5"/><rect x="13.5" y="4" width="3.5" height="12" rx="1.5"/></svg>
+        <span>Output</span></button></li>
+      <li><button class="nav-row" data-view="tester" type="button">
+        <svg class="nav-icon" viewBox="0 0 20 20" aria-hidden="true"><path d="M6 6h8a4 4 0 0 1 3.9 4.9l-.8 3.4a2 2 0 0 1-3.5.8L12 13H8l-1.6 2.1a2 2 0 0 1-3.5-.8l-.8-3.4A4 4 0 0 1 6 6z"/><path d="M6.5 9v3M5 10.5h3"/></svg>
+        <span>Controller Tester</span></button></li>
+    </ul>
+  </nav>
+
+  <main class="content" id="content">
+    <header class="toolbar">
+      <div class="toolbar-title">
+        <h1 id="title">Controller Studio Pro</h1>
+        <p id="subtitle"></p>
+      </div>
+      <div class="toolbar-glass glass">
+        <div class="toolbar-actions" id="preset-actions">
+          <span class="in-use" id="in-use" hidden>
+            <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8.5l3 3 6-7"/></svg>In Use
+          </span>
+          <button class="btn primary" id="use-preset" type="button">Use This Preset</button>
+          <div class="menu-wrap">
+            <button class="btn icon" id="more" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="More actions">
+              <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="3.5" cy="8" r="1.2"/><circle cx="8" cy="8" r="1.2"/><circle cx="12.5" cy="8" r="1.2"/></svg>
+            </button>
+            <div class="menu glass" id="more-menu" role="menu" hidden>
+              <button role="menuitem" id="act-rename" type="button">Rename…</button>
+              <button role="menuitem" id="act-duplicate" type="button">Duplicate</button>
+              <button role="menuitem" id="act-reset" type="button">Reset to Defaults</button>
+              <button role="menuitem" id="act-delete" class="danger" type="button">Delete Preset…</button>
+            </div>
+          </div>
+        </div>
+        <label class="master" title="Hold L3 + R3 on the controller for one second to toggle">
+          <span>Trigger Effects</span>
+          <input type="checkbox" class="switch" id="enabled" checked>
+        </label>
+      </div>
+    </header>
+
+    <div class="banner" id="banner" role="status" hidden></div>
+
+    <!-- ===================== Preset editor ===================== -->
+    <section class="view" id="view-preset" aria-labelledby="title">
+      <div class="trigger-grid" id="triggers"></div>
+      <article class="card span">
+        <header class="card-head"><h2>Preset</h2></header>
+        <div class="rows">
+          <div class="row">
+            <div class="row-label"><strong>Effects react to</strong><span class="hint" id="source-hint"></span></div>
+            <div class="seg" role="radiogroup" aria-label="Effects react to" data-p="telemetry">
+              <button role="radio" data-value="none" type="button">Your Inputs</button>
+              <button role="radio" data-value="game" type="button">Game Data</button>
+            </div>
+          </div>
+          <div class="row telemetry-status" id="tele-row">
+            <div class="row-label"><strong id="tele-state">Waiting for game data…</strong><span class="hint" id="tele-help"></span></div>
+            <span class="tele-dot" aria-hidden="true"></span>
+          </div>
+          <details class="row stack setup" id="tele-setup">
+            <summary><strong>Set up game data</strong><span class="hint">Point the game's telemetry at <b class="ip">this computer</b>.</span></summary>
+            <dl class="games">
+              <dt>Forza Horizon 4 / 5, Forza Motorsport</dt>
+              <dd>Settings › HUD and Gameplay › Data Out: On · IP <b class="ip"></b> · Port <b>5300</b></dd>
+              <dt>F1 22 / 23 / 24 / 25</dt>
+              <dd>Settings › Telemetry Settings › UDP Telemetry: On · IP <b class="ip"></b> · Port <b>20777</b></dd>
+              <dt>DiRT Rally 2.0, DiRT 4, GRID</dt>
+              <dd>In <code>Documents/My Games/&lt;game&gt;/hardwaresettings/hardware_settings_config.xml</code> set <code>&lt;udp enabled="true" extradata="3" ip="<span class="ip"></span>" port="20777" delay="1" /&gt;</code></dd>
+              <dt>BeamNG.drive</dt>
+              <dd>Options › Other › OutGauge support: On · IP <b class="ip"></b> · Port <b>4444</b></dd>
+              <dt>Live for Speed</dt>
+              <dd>In <code>cfg.txt</code>: <code>OutGauge Mode 1</code>, <code>OutGauge IP <span class="ip"></span></code>, <code>OutGauge Port 4444</code></dd>
+              <dt>Any other game (The Crew Motorfest, Rainbow Six Siege, …)</dt>
+              <dd>Most games don't share live data. Use a <b>Game rumble</b> reaction instead: it reacts whenever the game shakes the controller. It needs the Virtual Controller (Output).</dd>
+            </dl>
+          </details>
+          <div class="row">
+            <div class="row-label"><strong>Preset Color</strong><span class="hint">The light bar uses this when Lighting is set to Match Preset.</span></div>
+            <input type="color" data-p="lightbar" aria-label="Preset color">
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <!-- ===================== Lighting ===================== -->
+    <section class="view" id="view-lighting" hidden aria-label="Lighting">
+      <article class="card span light-hero">
+        <div class="light-preview" id="light-preview" aria-hidden="true">
+          <svg viewBox="0 0 520 200">
+            <path class="lp-body" d="M120 40C80 40 58 52 46 80L14 190H506L474 80C462 52 440 40 400 40Z"/>
+            <rect class="lp-pad" x="168" y="44" width="184" height="96" rx="16"/>
+            <path class="lp-bar" d="M160 56c-6 30-6 60 2 92"/>
+            <path class="lp-bar" d="M360 56c6 30 6 60-2 92"/>
+            <g class="lp-leds"><rect x="236" y="152" width="8" height="3" rx="1.5"/><rect x="248" y="152" width="8" height="3" rx="1.5"/><rect x="260" y="152" width="8" height="3" rx="1.5"/><rect x="272" y="152" width="8" height="3" rx="1.5"/><rect x="284" y="152" width="8" height="3" rx="1.5"/></g>
+          </svg>
+        </div>
+        <p class="hint center" id="light-caption">Lighting stays this way whenever the controller is connected.</p>
+      </article>
+      <article class="card span">
+        <div class="rows">
+          <div class="row">
+            <div class="row-label"><strong>Light Bar</strong><span class="hint">Match the preset in use, keep one color all the time, or turn it off.</span></div>
+            <div class="seg" role="radiogroup" aria-label="Light bar" data-l="mode">
+              <button role="radio" data-value="preset" type="button">Match Preset</button>
+              <button role="radio" data-value="custom" type="button">Custom Color</button>
+              <button role="radio" data-value="off" type="button">Off</button>
+            </div>
+          </div>
+          <div class="row stack" data-lshow="mode=custom">
+            <div class="row-label"><strong>Color</strong></div>
+            <div class="swatches" id="light-swatches" role="radiogroup" aria-label="Light bar color"></div>
+          </div>
+          <div class="row" data-lshow="mode=preset|custom">
+            <div class="row-label"><strong>Effect</strong></div>
+            <div class="seg" role="radiogroup" aria-label="Light effect" data-l="effect">
+              <button role="radio" data-value="solid" type="button">Solid</button>
+              <button role="radio" data-value="breathe" type="button">Breathe</button>
+              <button role="radio" data-value="rainbow" type="button">Rainbow</button>
+              <button role="radio" data-value="battery" type="button">Battery Level</button>
+            </div>
+          </div>
+          <label class="slider-row" data-lshow="effect=breathe|rainbow"><span>Speed</span>
+            <input type="range" min="1" max="10" step="1" data-l="speed"><output></output></label>
+          <label class="slider-row" data-lshow="mode=preset|custom"><span>Brightness</span>
+            <input type="range" min="5" max="100" step="1" data-l="brightness" data-fmt="pct"><output></output></label>
+          <div class="row">
+            <div class="row-label"><strong>Player Lights</strong><span class="hint">The small white lights under the touchpad.</span></div>
+            <div class="seg" role="radiogroup" aria-label="Player lights" data-l="player_leds">
+              <button role="radio" data-value="off" type="button">Off</button>
+              <button role="radio" data-value="center" type="button">Center</button>
+              <button role="radio" data-value="edges" type="button">Edges</button>
+              <button role="radio" data-value="all" type="button">All</button>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <article class="card span">
+        <header class="card-head"><h2>Controller Studio Pro Window</h2></header>
+        <label class="slider-row"><span>Glass</span>
+          <input type="range" min="20" max="95" step="1" data-a="glass" data-fmt="glass" aria-label="Window glass, clear to frosted"><output></output></label>
+        <p class="hint">How much of your desktop shows through the window. Clearer looks lighter; more frosted is easier to read over busy wallpapers.</p>
+      </article>
+    </section>
+
+    <!-- ===================== Output ===================== -->
+    <section class="view" id="view-output" hidden aria-label="Output">
+      <article class="card span">
+        <div class="rows">
+          <div class="row big">
+            <div class="row-label">
+              <strong>Virtual Controller</strong>
+              <span class="hint">Games get a remapped copy of your controller, so each preset's Throw settings and the button mapping below take effect. Games see it as an Xbox-style pad; the touchpad and motion aren't passed to the PC.</span>
+            </div>
+            <input type="checkbox" class="switch" data-o="virtual" aria-label="Virtual controller">
+          </div>
+          <div class="row"><div class="row-label"><strong>Device access</strong><span class="hint" id="o-access"></span></div><span class="pill" id="o-access-pill"></span></div>
+          <div class="row"><div class="row-label"><strong>Moonlight</strong><span class="hint" id="o-moon"></span></div><span class="pill" id="o-moon-pill"></span></div>
+          <div class="row"><div class="row-label"><strong>Status</strong><span class="hint" id="o-state"></span></div><span class="pill" id="o-state-pill"></span></div>
+        </div>
+      </article>
+      <article class="card span">
+        <header class="card-head"><h2>Extra Buttons</h2></header>
+        <p class="hint">Send the Edge's back paddles and Fn buttons to games as another button. They can still trigger reactions either way.</p>
+        <div class="rows" id="map-rows"></div>
+      </article>
+    </section>
+
+    <!-- ===================== Tester ===================== -->
+    <section class="view tester" id="view-tester" hidden aria-label="Controller tester">
+      <article class="card pad-card span">
+        <svg class="pad" id="pad" viewBox="0 0 640 400" role="img" aria-label="Live controller diagram">
+          <g class="trig" data-trig="l2"><title>L2</title><rect x="100" y="8" width="96" height="30" rx="9" class="trig-bg"/><rect x="100" y="8" width="0" height="30" rx="9" class="trig-fill"/><text x="148" y="28">L2</text></g>
+          <g class="trig" data-trig="r2"><title>R2</title><rect x="444" y="8" width="96" height="30" rx="9" class="trig-bg"/><rect x="444" y="8" width="0" height="30" rx="9" class="trig-fill"/><text x="492" y="28">R2</text></g>
+          <rect data-btn="l1" x="96" y="46" width="104" height="14" rx="7"><title>L1</title></rect>
+          <rect data-btn="r1" x="440" y="46" width="104" height="14" rx="7"><title>R1</title></rect>
+          <path class="body" d="M170 66C120 66 92 82 76 118L32 290C20 340 52 386 96 381C126 378 141 356 156 331L200 262C210 249 224 245 240 245H400C416 245 430 249 440 262L484 331C499 356 514 378 544 381C588 386 620 340 608 290L564 118C548 82 520 66 470 66Z"/>
+          <rect data-btn="paddle_left" class="paddle" x="58" y="300" width="70" height="38" rx="14"><title>Left back paddle</title></rect>
+          <rect data-btn="paddle_right" class="paddle" x="512" y="300" width="70" height="38" rx="14"><title>Right back paddle</title></rect>
+          <rect data-btn="touchpad" class="touchpad" x="222" y="70" width="196" height="104" rx="16"><title>Touchpad</title></rect>
+          <g id="pad-touches"></g>
+          <rect data-btn="create" x="190" y="84" width="12" height="26" rx="6"><title>Create</title></rect>
+          <rect data-btn="options" x="438" y="84" width="12" height="26" rx="6"><title>Options</title></rect>
+          <g data-btn="up"><title>D-pad up</title><path d="M118 104h24v26l-12 12-12-12z"/></g>
+          <g data-btn="down"><title>D-pad down</title><path d="M118 196h24v-26l-12-12-12 12z"/></g>
+          <g data-btn="left"><title>D-pad left</title><path d="M84 138v24h26l12-12-12-12z"/></g>
+          <g data-btn="right"><title>D-pad right</title><path d="M176 138v24h-26l-12-12 12-12z"/></g>
+          <circle data-btn="triangle" cx="510" cy="116" r="16"><title>Triangle</title></circle>
+          <circle data-btn="circle" cx="544" cy="150" r="16"><title>Circle</title></circle>
+          <circle data-btn="cross" cx="510" cy="184" r="16"><title>Cross</title></circle>
+          <circle data-btn="square" cx="476" cy="150" r="16"><title>Square</title></circle>
+          <g class="glyphs" aria-hidden="true">
+            <path d="M510 107l7.5 13h-15z"/><circle cx="544" cy="150" r="7"/>
+            <path d="M504 178l12 12M516 178l-12 12"/><rect x="470" y="144" width="12" height="12"/>
+          </g>
+          <circle class="stick-well" cx="232" cy="214" r="34"/>
+          <circle class="stick-well" cx="408" cy="214" r="34"/>
+          <circle data-btn="l3" id="stick-l" class="stick" cx="232" cy="214" r="22"><title>Left stick (L3)</title></circle>
+          <circle data-btn="r3" id="stick-r" class="stick" cx="408" cy="214" r="22"><title>Right stick (R3)</title></circle>
+          <circle data-btn="ps" cx="320" cy="214" r="13"><title>PS button</title></circle>
+          <rect data-btn="mute" x="308" y="236" width="24" height="9" rx="4.5"><title>Mute</title></rect>
+          <rect data-btn="fn_left" class="edge-only" x="262" y="252" width="22" height="10" rx="5"><title>Left Fn</title></rect>
+          <rect data-btn="fn_right" class="edge-only" x="356" y="252" width="22" height="10" rx="5"><title>Right Fn</title></rect>
+          <text class="paddle-label" x="93" y="356">Back L</text>
+          <text class="paddle-label" x="547" y="356">Back R</text>
+        </svg>
+        <p class="pad-readout" id="pressed" aria-live="off">No buttons pressed</p>
+      </article>
+
+      <article class="card">
+        <header class="card-head"><h2>Sticks</h2>
+          <button class="btn small" id="clear-trails" type="button">Clear Trails</button></header>
+        <div class="sticks">
+          <figure><canvas id="cv-l" width="320" height="320" aria-label="Left stick position"></canvas>
+            <figcaption><b>Left</b> <span id="lval">–</span></figcaption></figure>
+          <figure><canvas id="cv-r" width="320" height="320" aria-label="Right stick position"></canvas>
+            <figcaption><b>Right</b> <span id="rval">–</span></figcaption></figure>
+        </div>
+        <p class="hint">Circle the sticks slowly to draw their range. Let go to measure drift at rest.</p>
+      </article>
+
+      <article class="card">
+        <header class="card-head"><h2>Triggers</h2></header>
+        <div class="trigger-meters">
+          <div class="meter"><span>L2</span>
+            <div class="meter-track"><div class="meter-fill" id="m-l2"></div><div class="meter-out" id="mo-l2"></div></div><output id="o-l2">0%</output></div>
+          <div class="meter"><span>R2</span>
+            <div class="meter-track"><div class="meter-fill" id="m-r2"></div><div class="meter-out" id="mo-r2"></div></div><output id="o-r2">0%</output></div>
+        </div>
+        <p class="hint" id="meter-hint">Bar: how far you're pulling. Line: what games receive.</p>
+        <h3 class="sub-head">Trigger Lab</h3>
+        <div class="lab">
+          <div class="seg" role="radiogroup" aria-label="Which trigger" id="lab-side">
+            <button role="radio" data-value="l2" type="button">L2</button>
+            <button role="radio" data-value="r2" type="button" aria-checked="true">R2</button>
+            <button role="radio" data-value="both" type="button">Both</button>
+          </div>
+          <div class="seg" role="radiogroup" aria-label="Effect" id="lab-kind">
+            <button role="radio" data-value="smooth" type="button" aria-checked="true">Smooth</button>
+            <button role="radio" data-value="zones" type="button">Zones</button>
+            <button role="radio" data-value="click" type="button">Click</button>
+            <button role="radio" data-value="vibrate" type="button">Vibrate</button>
+          </div>
+          <label class="slider-row"><span>Strength</span>
+            <input type="range" min="1" max="100" step="1" value="60" id="lab-strength" data-fmt="pct"><output>60%</output></label>
+          <label class="slider-row" id="lab-freq-row"><span>Rate</span>
+            <input type="range" min="1" max="120" step="1" value="40" id="lab-freq" data-fmt="hz"><output>40 Hz</output></label>
+          <div class="row-actions">
+            <button class="btn" id="lab-stop" type="button">Stop</button>
+            <button class="btn primary" id="lab-go" type="button">Apply for 10 s</button>
+          </div>
+        </div>
+      </article>
+
+      <article class="card">
+        <header class="card-head"><h2>Touchpad</h2></header>
+        <div class="touch-area" id="touch-area" aria-label="Touchpad contacts"></div>
+        <p class="hint" id="touch-read">No touches</p>
+      </article>
+
+      <article class="card">
+        <header class="card-head"><h2>Motion</h2></header>
+        <div class="motion">
+          <div class="horizon" aria-hidden="true"><div class="horizon-pad" id="tilt"></div></div>
+          <dl class="readings">
+            <dt>Tilt</dt><dd id="tilt-read">–</dd>
+            <dt>Gyro</dt><dd id="gyro-read">–</dd>
+            <dt>Accel</dt><dd id="accel-read">–</dd>
+          </dl>
+        </div>
+      </article>
+
+      <article class="card">
+        <header class="card-head"><h2>Rumble</h2></header>
+        <label class="slider-row"><span>Heavy motor</span>
+          <input type="range" min="0" max="100" step="5" value="80" id="rum-strong" data-fmt="pct"><output>80%</output></label>
+        <label class="slider-row"><span>Light motor</span>
+          <input type="range" min="0" max="100" step="5" value="40" id="rum-weak" data-fmt="pct"><output>40%</output></label>
+        <div class="row-actions"><button class="btn" id="rumble" type="button">Rumble for 1 s</button></div>
+      </article>
+
+      <article class="card">
+        <header class="card-head"><h2>Connection</h2></header>
+        <dl class="readings wide">
+          <dt>Model</dt><dd id="i-model">–</dd>
+          <dt>Connection</dt><dd id="i-conn">–</dd>
+          <dt>Address</dt><dd id="i-addr">–</dd>
+          <dt>Report rate</dt><dd id="i-rate">–</dd>
+          <dt>Battery</dt><dd id="i-batt">–</dd>
+        </dl>
+      </article>
+    </section>
+  </main>
+</div>
+
+<!-- ===================== Templates ===================== -->
+<template id="tpl-trigger">
+  <article class="card trig">
+    <header class="card-head">
+      <h2><span class="key big" data-t="name"></span><span class="pull-chip" data-t="pull">0%</span></h2>
+      <label class="quick" title="Turn this trigger's reactions (like the slam buzz or shift kick) on or off">
+        <span>Reactions</span><input type="checkbox" class="switch small" data-k="reactions_on" aria-label="Reactions on this trigger">
+      </label>
+      <div class="seg tabs" role="tablist" aria-label="Trigger settings">
+        <button role="tab" data-tab="feel" type="button">Feel</button>
+        <button role="tab" data-tab="reactions" type="button">Reactions</button>
+        <button role="tab" data-tab="throw" type="button">Throw</button>
+      </div>
+    </header>
+
+    <div class="pane" data-pane="feel" role="tabpanel">
+      <div class="seg wide" role="radiogroup" aria-label="Feel" data-k="feel.type">
+        <button role="radio" data-value="off" type="button">Off</button>
+        <button role="radio" data-value="zones" type="button">Zones</button>
+        <button role="radio" data-value="smooth" type="button">Smooth</button>
+        <button role="radio" data-value="click" type="button">Click</button>
+        <button role="radio" data-value="vibrate" type="button">Vibrate</button>
+      </div>
+
+      <div class="feel-off" data-show="feel.type=off"><p class="hint">The trigger moves freely, like a normal controller.</p></div>
+
+      <div data-show="feel.type=zones">
+        <p class="hint">Ten zones down the pull, each with its own resistance (0–8). Drag the bars, or focus one and use the arrow keys.</p>
+        <div class="profile" aria-label="Resistance zones"></div>
+        <div class="axis" aria-hidden="true"><span>Top of pull</span><span>Fully pressed</span></div>
+        <div class="profile-foot">
+          <div class="shape-buttons" role="group" aria-label="Shapes">
+            <button class="btn small" data-shape="linear" type="button">Even</button>
+            <button class="btn small" data-shape="progressive" type="button">Progressive</button>
+            <button class="btn small" data-shape="late" type="button">Late Wall</button>
+            <button class="btn small" data-shape="early" type="button">Early Wall</button>
+            <button class="btn small" data-nudge="-1" type="button" aria-label="Lighter">−</button>
+            <button class="btn small" data-nudge="1" type="button" aria-label="Heavier">+</button>
+          </div>
+        </div>
+      </div>
+
+      <div data-show="feel.type=smooth">
+        <p class="hint">One continuous resistance with fine control over where it starts and how strong it is.</p>
+        <div class="track-viz" data-viz="smooth" aria-hidden="true"><i class="tv-fill"></i><i class="tv-finger"></i></div>
+        <label class="slider-row"><span>Starts at</span><input type="range" min="0" max="95" step="1" data-k="feel.smooth.start" data-fmt="pct"><output></output></label>
+        <label class="slider-row"><span>Force</span><input type="range" min="1" max="100" step="1" data-k="feel.smooth.force" data-fmt="pct"><output></output></label>
+      </div>
+
+      <div data-show="feel.type=click">
+        <p class="hint">A wall you push through with a click, like a gun trigger or a detent.</p>
+        <div class="track-viz" data-viz="click" aria-hidden="true"><i class="tv-wall"></i><i class="tv-finger"></i></div>
+        <label class="slider-row"><span>Wall at</span><input type="range" min="2" max="7" step="1" data-k="feel.click.start" data-fmt="zone"><output></output></label>
+        <label class="slider-row"><span>Breaks at</span><input type="range" min="3" max="8" step="1" data-k="feel.click.end" data-fmt="zone"><output></output></label>
+        <label class="slider-row"><span>Force</span><input type="range" min="1" max="8" step="1" data-k="feel.click.force"><output></output></label>
+      </div>
+
+      <div data-show="feel.type=vibrate">
+        <p class="hint">A constant vibration in the trigger from a point in the pull.</p>
+        <label class="slider-row"><span>From</span><input type="range" min="0" max="9" step="1" data-k="feel.vibrate.start" data-fmt="zone"><output></output></label>
+        <label class="slider-row"><span>Strength</span><input type="range" min="1" max="8" step="1" data-k="feel.vibrate.amplitude"><output></output></label>
+        <label class="slider-row"><span>Rate</span><input type="range" min="1" max="120" step="1" data-k="feel.vibrate.freq" data-fmt="hz"><output></output></label>
+      </div>
+
+      <div class="row-actions"><button class="btn small feel" data-feel type="button">Feel It</button></div>
+    </div>
+
+    <div class="pane" data-pane="reactions" role="tabpanel" hidden>
+      <p class="hint">Reactions take over the trigger while they're active. When several are active, the one highest in the list wins.</p>
+      <p class="note" data-off-note>Reactions are off for this trigger. Turn them back on with the Reactions switch above.</p>
+      <ul class="reactions" role="list"></ul>
+      <button class="btn add" data-add-reaction type="button">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3v10M3 8h10"/></svg>Add Reaction</button>
+    </div>
+
+    <div class="pane" data-pane="throw" role="tabpanel" hidden>
+      <div class="throw">
+        <svg class="curve" viewBox="0 0 220 220" role="img" aria-label="Output response curve">
+          <rect class="c-dz" x="20" y="10" width="0" height="190"/>
+          <rect class="c-sat" x="210" y="10" width="0" height="190"/>
+          <path class="c-grid" d="M20 10v190h190M20 105h190M115 10v190"/>
+          <path class="c-line" d=""/>
+          <circle class="c-dot" r="6" cx="20" cy="200"/>
+          <text x="115" y="218">Your pull</text>
+          <text x="8" y="105" transform="rotate(-90 8 105)">Game sees</text>
+        </svg>
+        <div class="throw-controls">
+          <label class="slider-row"><span>Dead zone</span><input type="range" min="0" max="50" step="1" data-k="output.deadzone" data-fmt="pct"><output></output></label>
+          <label class="slider-row"><span>100% at</span><input type="range" min="20" max="100" step="1" data-k="output.full_at" data-fmt="pct"><output></output></label>
+          <label class="slider-row"><span>Response</span><input type="range" min="-100" max="100" step="5" data-k="output.curve" data-fmt="curve"><output></output></label>
+          <label class="slider-row"><span>Max output</span><input type="range" min="10" max="100" step="1" data-k="output.max" data-fmt="pct"><output></output></label>
+          <div class="row-actions"><button class="btn small" data-reset-throw type="button">Reset</button></div>
+        </div>
+      </div>
+      <p class="note" data-vpad-note>Throw changes reach games when the <button class="link" data-goto="output" type="button">Virtual Controller</button> is on.</p>
+    </div>
+  </article>
+</template>
+
+<template id="tpl-reaction">
+  <li class="reaction">
+    <div class="r-head">
+      <input type="checkbox" class="switch small" data-r="enabled" aria-label="Reaction on">
+      <button class="r-summary" type="button" aria-expanded="false"><span></span>
+        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M6 4l4 4-4 4"/></svg></button>
+    </div>
+    <div class="r-body" hidden>
+      <label class="slider-row"><span>When</span>
+        <select data-r="when">
+          <option value="buttons">Buttons are pressed</option>
+          <option value="slam">The trigger is slammed</option>
+          <option value="held">The trigger is held past a point</option>
+          <option value="rumble">The game rumbles the controller</option>
+          <option value="gear">Game data: gear changes</option>
+          <option value="abs">Game data: wheels lock up</option>
+          <option value="wheelspin">Game data: wheelspin</option>
+          <option value="redline">Game data: near the redline</option>
+        </select></label>
+      <div class="chips" data-rshow="when=buttons" role="group" aria-label="Buttons"></div>
+      <div data-rshow="when=slam">
+        <label class="slider-row"><span>From below</span><input type="range" min="0" max="80" step="1" data-r="slam.from" data-fmt="pct"><output></output></label>
+        <label class="slider-row"><span>To above</span><input type="range" min="20" max="100" step="1" data-r="slam.to" data-fmt="pct"><output></output></label>
+        <label class="slider-row"><span>Within</span><input type="range" min="50" max="500" step="10" data-r="slam.within" data-fmt="ms"><output></output></label>
+      </div>
+      <label class="slider-row" data-rshow="when=held"><span>Past</span><input type="range" min="5" max="100" step="1" data-r="held.above" data-fmt="pct"><output></output></label>
+      <div data-rshow="when=rumble">
+        <label class="slider-row"><span>Rumble over</span><input type="range" min="1" max="100" step="1" data-r="rumble.above" data-fmt="pct"><output></output></label>
+        <div class="slider-row"><span>Strength</span><label class="check"><input type="checkbox" class="switch small" data-r="rumble.scale"> Follows how hard the game rumbles</label></div>
+        <p class="hint" data-rumble-note>Needs the Virtual Controller (Output) so Controller Studio Pro can see the game's rumble.</p>
+      </div>
+      <div class="slider-row"><span>Do</span>
+        <div class="seg small" role="radiogroup" aria-label="Effect" data-r="effect.type">
+          <button role="radio" data-value="kick" type="button">Kick</button>
+          <button role="radio" data-value="buzz" type="button">Buzz</button>
+          <button role="radio" data-value="wall" type="button">Wall</button>
+        </div></div>
+      <label class="slider-row"><span>Strength</span><input type="range" min="1" max="8" step="1" data-r="effect.strength"><output></output></label>
+      <label class="slider-row"><span>From</span><input type="range" min="0" max="9" step="1" data-r="effect.start" data-fmt="zone"><output></output></label>
+      <label class="slider-row" data-rshow="effect.type=buzz"><span>Rate</span><input type="range" min="1" max="120" step="1" data-r="effect.freq" data-fmt="hz"><output></output></label>
+      <label class="slider-row" data-rshow="when=buttons|gear|slam"><span>Length</span><input type="range" min="10" max="1000" step="5" data-r="effect.duration_ms" data-fmt="ms"><output></output></label>
+      <div class="row-actions">
+        <button class="btn small" data-move="-1" type="button">Move Up</button>
+        <button class="btn small" data-move="1" type="button">Move Down</button>
+        <button class="btn small danger-text" data-delete type="button">Delete</button>
+        <button class="btn small feel" data-feel-r type="button">Feel It</button>
+      </div>
+    </div>
+  </li>
+</template>
+
+<dialog id="confirm" class="glass" aria-labelledby="confirm-title">
+  <form method="dialog">
+    <h2 id="confirm-title">Delete this preset?</h2>
+    <p id="confirm-body">This can't be undone.</p>
+    <div class="row-actions">
+      <button class="btn" value="cancel" autofocus>Cancel</button>
+      <button class="btn destructive" value="ok">Delete</button>
+    </div>
+  </form>
+</dialog>
+<dialog id="rename" class="glass" aria-labelledby="rename-title">
+  <form method="dialog">
+    <h2 id="rename-title">Rename Preset</h2>
+    <label class="field">Name <input id="rename-name" maxlength="40"></label>
+    <label class="field">Description <input id="rename-summary" maxlength="140"></label>
+    <div class="row-actions">
+      <button class="btn" value="cancel">Cancel</button>
+      <button class="btn primary" value="ok">Save</button>
+    </div>
+  </form>
+</dialog>
+<script src="app.js"></script>
+</body>
+</html>

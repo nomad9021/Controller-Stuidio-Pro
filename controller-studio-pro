@@ -1,0 +1,197 @@
+#!/usr/bin/env python3
+"""Controller Studio Pro window: a frameless, see-through GTK window around the local
+Controller Studio Pro service. On KDE Plasma the desktop behind it is blurred by KWin."""
+import math
+import os
+import subprocess
+import sys
+import time
+import urllib.request
+
+# KWin's blur-behind is requested through an X11 window property, so run under XWayland.
+os.environ.setdefault("GDK_BACKEND", "x11")
+
+import gi  # noqa: E402
+gi.require_version("Gtk", "3.0")
+gi.require_version("Gdk", "3.0")
+gi.require_version("WebKit2", "4.1")
+from gi.repository import Gdk, Gio, GLib, Gtk, WebKit2  # noqa: E402
+
+URL = "http://127.0.0.1:%s/" % os.environ.get("CSP_PORT", "8765")
+RADIUS = 14  # must match --window-radius in app.css
+EDGES = {
+    "n": Gdk.WindowEdge.NORTH, "s": Gdk.WindowEdge.SOUTH, "e": Gdk.WindowEdge.EAST, "w": Gdk.WindowEdge.WEST,
+    "ne": Gdk.WindowEdge.NORTH_EAST, "nw": Gdk.WindowEdge.NORTH_WEST,
+    "se": Gdk.WindowEdge.SOUTH_EAST, "sw": Gdk.WindowEdge.SOUTH_WEST,
+}
+
+
+def service_up():
+    try:
+        urllib.request.urlopen(URL + "api/status", timeout=0.5).read()
+        return True
+    except OSError:
+        return False
+
+
+def ensure_service():
+    if service_up():
+        return
+    subprocess.run(["systemctl", "--user", "start", "controller-studio-pro.service"], check=False)
+    for _ in range(30):
+        if service_up():
+            return
+        time.sleep(0.1)
+
+
+def a11y(schema, key, default=False):
+    src = Gio.SettingsSchemaSource.get_default()
+    if not src or not src.lookup(schema, True):
+        return default
+    return Gio.Settings.new(schema).get_boolean(key)
+
+
+def rounded_region(w, h, r, step=2):
+    """A rounded rectangle as a list of (x, y, w, h) strips for KWin's blur region."""
+    if r <= 0:
+        return [(0, 0, w, h)]
+    rects = [(0, r, w, h - 2 * r)]
+    for y in range(0, r, step):
+        dy = r - (y + step / 2)
+        inset = int(round(r - math.sqrt(max(0, r * r - dy * dy))))
+        rects.append((inset, y, w - 2 * inset, step))
+        rects.append((inset, h - y - step, w - 2 * inset, step))
+    return rects
+
+
+class Window(Gtk.Window):
+    def __init__(self, shot=None):
+        super().__init__(title="Controller Studio Pro")
+        self.shot = shot
+        self.maximized = False
+        self.set_default_size(1240, 820)
+        self.set_icon_name("input-gaming")
+        self.set_decorated(False)
+        visual = self.get_screen().get_rgba_visual()
+        if visual:
+            self.set_visual(visual)
+        self.set_app_paintable(True)
+
+        ucm = WebKit2.UserContentManager()
+        ucm.register_script_message_handler("win")
+        ucm.connect("script-message-received::win", self.on_message)
+        self.view = WebKit2.WebView.new_with_user_content_manager(ucm)
+        self.view.set_background_color(Gdk.RGBA(0, 0, 0, 0))
+        settings = self.view.get_settings()
+        settings.set_enable_developer_extras("--dev" in sys.argv)
+        self.view.connect("context-menu", lambda *a: "--dev" not in sys.argv)
+        self.add(self.view)
+
+        accel = Gtk.AccelGroup()
+        self.add_accel_group(accel)
+        ctrl = Gdk.ModifierType.CONTROL_MASK
+        accel.connect(Gdk.keyval_from_name("q"), ctrl, 0, lambda *a: self.close())
+        accel.connect(Gdk.keyval_from_name("w"), ctrl, 0, lambda *a: self.close())
+        accel.connect(Gdk.keyval_from_name("r"), ctrl, 0, lambda *a: self.view.reload())
+
+        self.connect("destroy", Gtk.main_quit)
+        self.connect("configure-event", lambda *a: self.queue_blur())
+        self.connect("window-state-event", self.on_state)
+        self._blur_pending = False
+        self._last_region = None
+
+    # ---- KWin blur behind the see-through areas
+
+    def queue_blur(self):
+        if not self._blur_pending:
+            self._blur_pending = True
+            GLib.timeout_add(60, self.apply_blur)
+
+    def apply_blur(self):
+        self._blur_pending = False
+        gdk_win = self.get_window()
+        if not gdk_win or not hasattr(gdk_win, "get_xid"):
+            return False
+        scale = self.get_scale_factor()
+        w, h = self.get_size()
+        region = rounded_region(w * scale, h * scale, 0 if self.maximized else RADIUS * scale)
+        if region != self._last_region:
+            self._last_region = region
+            value = ",".join(str(int(v)) for rect in region for v in rect)
+            subprocess.run(["xprop", "-id", str(gdk_win.get_xid()), "-f", "_KDE_NET_WM_BLUR_BEHIND_REGION",
+                            "32c", "-set", "_KDE_NET_WM_BLUR_BEHIND_REGION", value],
+                           check=False, capture_output=True)
+        return False
+
+    def on_state(self, _w, event):
+        self.maximized = bool(event.new_window_state & Gdk.WindowState.MAXIMIZED)
+        self.view.evaluate_javascript(
+            f"document.documentElement.classList.toggle('maximized', {str(self.maximized).lower()})",
+            -1, None, None, None, None, None)
+        self._last_region = None
+        self.queue_blur()
+
+    # ---- window controls drawn by the page
+
+    def on_message(self, _ucm, result):
+        msg = result.get_js_value().to_string()
+        seat = Gdk.Display.get_default().get_default_seat()
+        _, x, y = seat.get_pointer().get_position()
+        t = Gtk.get_current_event_time()
+        if msg == "drag":
+            self.begin_move_drag(1, x, y, t)
+        elif msg.startswith("resize:") and msg[7:] in EDGES and not self.maximized:
+            self.begin_resize_drag(EDGES[msg[7:]], 1, x, y, t)
+        elif msg == "minimize":
+            self.iconify()
+        elif msg == "maximize":
+            self.unmaximize() if self.maximized else self.maximize()
+        elif msg == "close":
+            self.close()
+
+    def load(self, extra_hash=""):
+        query = {
+            "hc": "1" if a11y("org.gnome.desktop.a11y.interface", "high-contrast") else "0",
+            "rm": "0" if a11y("org.gnome.desktop.interface", "enable-animations", True) else "1",
+        }
+        if self.shot and not os.environ.get("SHOT_SPLASH"):
+            query["nosplash"] = "1"
+        qs = "&".join(f"{k}={v}" for k, v in query.items())
+        self.view.load_uri(URL + "?" + qs + ("#" + extra_hash if extra_hash else ""))
+
+
+def main():
+    shot = sys.argv[2] if len(sys.argv) > 2 and sys.argv[1] == "--screenshot" else None  # development aid
+    ensure_service()
+    GLib.set_prgname("controller-studio-pro")
+    GLib.set_application_name("Controller Studio Pro")
+    win = Window(shot)
+    win.load(sys.argv[3] if shot and len(sys.argv) > 3 else "")
+    win.show_all()
+
+    if shot:
+        win.view.get_settings().set_enable_write_console_messages_to_stdout(True)
+        delay = int(os.environ.get("SHOT_DELAY", "2500"))
+        js = os.environ.get("SHOT_JS")
+        if js:
+            GLib.timeout_add(max(100, delay - 700),
+                             lambda: win.view.evaluate_javascript(js, -1, None, None, None, None, None) and False)
+
+        def snap():
+            if os.environ.get("SHOT_SCREEN"):  # real on-screen capture, including the blurred desktop
+                subprocess.run(["spectacle", "-b", "-n", "-a", "-o", shot], check=False, capture_output=True)
+                Gtk.main_quit()
+                return False
+
+            def done(v, res):
+                v.get_snapshot_finish(res).write_to_png(shot)
+                Gtk.main_quit()
+            win.view.get_snapshot(WebKit2.SnapshotRegion.VISIBLE, WebKit2.SnapshotOptions.TRANSPARENT_BACKGROUND,
+                                  None, done)
+            return False
+        GLib.timeout_add(delay, snap)
+    Gtk.main()
+
+
+if __name__ == "__main__":
+    main()
