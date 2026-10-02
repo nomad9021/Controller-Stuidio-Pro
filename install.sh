@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # Controller Studio Pro installer.
-#   curl -fsSL https://raw.githubusercontent.com/nomad9021/Controler-Stuidio-Pro/main/install.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/nomad9021/Controller-Stuidio-Pro/main/install.sh | bash
 # Uninstall:
-#   curl -fsSL https://raw.githubusercontent.com/nomad9021/Controler-Stuidio-Pro/main/install.sh | bash -s -- --uninstall
+#   curl -fsSL https://raw.githubusercontent.com/nomad9021/Controller-Stuidio-Pro/main/install.sh | bash -s -- --uninstall
 set -euo pipefail
 
-REPO="https://github.com/nomad9021/Controler-Stuidio-Pro.git"
+REPO="https://github.com/nomad9021/Controller-Stuidio-Pro.git"
 APP_ID="controller-studio-pro"
 APP_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/$APP_ID"
 UNIT_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user"

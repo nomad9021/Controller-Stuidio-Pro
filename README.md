@@ -9,7 +9,7 @@ Adaptive triggers, lighting and a full controller tester for the **PlayStation D
 ## Install
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/nomad9021/Controler-Stuidio-Pro/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/nomad9021/Controller-Stuidio-Pro/main/install.sh | bash
 ```
 
 The installer:
@@ -24,7 +24,7 @@ Run the same command again to update.
 To uninstall:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/nomad9021/Controler-Stuidio-Pro/main/install.sh | bash -s -- --uninstall
+curl -fsSL https://raw.githubusercontent.com/nomad9021/Controller-Stuidio-Pro/main/install.sh | bash -s -- --uninstall
 ```
 
 Supports Fedora, Debian/Ubuntu, Arch and openSUSE. Connect the controller over Bluetooth or USB first. If it was already connected when you installed, turn it off and on.
