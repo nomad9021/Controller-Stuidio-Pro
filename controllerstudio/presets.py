@@ -145,7 +145,7 @@ DEFAULT_SETTINGS = {
     "lighting": {"mode": "preset", "color": "#2f6bff", "effect": "solid", "speed": 5,
                  "brightness": 100, "player_leds": "center"},
     "output": {"virtual": False, "map": {"paddle_left": "", "paddle_right": "", "fn_left": "", "fn_right": ""}},
-    "app": {"glass": 25, "blur": False},
+    "app": {"glass": 55, "blur": True},
 }
 
 

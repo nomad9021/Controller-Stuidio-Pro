@@ -54,7 +54,7 @@
     --shadow: 0 10px 34px rgba(0, 0, 0, .45);
   }
 }
-/* Increase contrast / reduce transparency: opaque surfaces, no blobs. */
+/* Increase contrast / reduce transparency: opaque surfaces. */
 :root.opaque { --window: var(--bg); --glass: var(--bg); --glass-strong: var(--bg); --material: var(--bg); }
 :root.opaque .glass, :root.opaque .card { backdrop-filter: none; -webkit-backdrop-filter: none; border: 1px solid var(--label-2); }
 @media (prefers-contrast: more) { :root { --label-2: var(--label); --separator: var(--label-2); } }
@@ -89,12 +89,7 @@ svg { fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round
     0 12px 40px rgba(0, 0, 0, .12);
   position: relative;
 }
-.glass::before {                               /* soft refraction sheen */
-  content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
-  background: linear-gradient(135deg, rgba(255, 255, 255, .28), rgba(255, 255, 255, 0) 38%,
-                              rgba(255, 255, 255, 0) 70%, rgba(255, 255, 255, .10));
-  mix-blend-mode: overlay;
-}
+
 
 /* ------------------------------------------------------------ layout */
 .app {
@@ -107,16 +102,7 @@ svg { fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round
 }
 :root.maximized { --window-radius: 0px; }
 
-/* coloured light behind the glass: tinted by the light bar, see-through to the desktop */
-.ambient { position: absolute; inset: 0; overflow: hidden; z-index: 0; pointer-events: none; opacity: calc(var(--frost) * .5); }
-.blob { position: absolute; border-radius: 50%; filter: blur(80px); will-change: transform; }
-.b1 { width: 50vw; height: 50vw; left: -10vw; top: -16vw; background: var(--tint); animation: drift1 38s ease-in-out infinite alternate; transition: background 1s; }
-.b2 { width: 44vw; height: 44vw; right: -12vw; top: 20vh; background: #2f6bff; animation: drift2 46s ease-in-out infinite alternate; }
-.b3 { width: 40vw; height: 40vw; left: 30vw; bottom: -22vw; background: #8a3cf0; animation: drift3 52s ease-in-out infinite alternate; }
-@keyframes drift1 { to { transform: translate(14vw, 10vh) scale(1.15); } }
-@keyframes drift2 { to { transform: translate(-12vw, -8vh) scale(.9); } }
-@keyframes drift3 { to { transform: translate(-10vw, -12vh) scale(1.2); } }
-.app > :not(.ambient) { position: relative; z-index: 1; }
+.app > * { position: relative; z-index: 1; }
 
 /* Windows-style title bar: icon + name on the left, caption buttons on the right */
 .titlebar {
@@ -161,6 +147,7 @@ svg { fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round
 .sidebar {
   margin: 10px 0 10px 10px; border-radius: 18px;
   padding: 12px 10px; overflow-y: auto;
+  background: rgba(var(--base), calc(.3 + var(--frost) * .6));   /* larger glass is more opaque */
 }
 .content { overflow-y: auto; padding: 0 26px 40px 22px; scroll-padding-top: 90px; min-height: 0; }
 .sidebar { min-height: 0; }
