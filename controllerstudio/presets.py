@@ -199,6 +199,8 @@ class PresetStore:
                 break
             except (OSError, ValueError):
                 continue
+        if not os.path.exists(STORE):           # first run, or carried over from the old name
+            self._save()
         if self.data.get("version", 1) < VERSION:
             self.data["overrides"] = {k: migrate_v1(v) for k, v in self.data["overrides"].items()}
             self.data["custom"] = [migrate_v1(p) for p in self.data["custom"]]
