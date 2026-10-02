@@ -13,7 +13,7 @@
   --glass-strong: rgba(var(--base), calc(.3 + var(--frost) * .6));
   --glass-edge: rgba(255, 255, 255, .55);
   --glass-shade: rgba(0, 0, 0, .06);
-  --material: rgba(var(--base), calc(.2 + var(--frost) * .66));
+  --material: rgba(var(--base), calc(.42 + var(--frost) * .5));
   --fill: rgba(118, 118, 128, .14);
   --fill-strong: rgba(118, 118, 128, .26);
   --separator: rgba(60, 60, 67, .14);
@@ -71,7 +71,8 @@ body {
 button, input, select { font: inherit; color: inherit; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 8px; }
 /* very clear glass: lift text off whatever is behind the window */
-:root.clear body { text-shadow: 0 1px 2px rgba(0, 0, 0, .55), 0 0 1px rgba(0, 0, 0, .4); }
+:root.clear { --label-2: color-mix(in srgb, var(--label) 82%, transparent); }
+:root.clear body { text-shadow: 0 1px 3px rgba(0, 0, 0, .7), 0 0 1px rgba(0, 0, 0, .6); }
 @media (prefers-color-scheme: light) { :root.clear body { text-shadow: 0 1px 2px rgba(255, 255, 255, .8), 0 0 1px rgba(255, 255, 255, .6); } }
 [hidden] { display: none !important; }
 svg { fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
