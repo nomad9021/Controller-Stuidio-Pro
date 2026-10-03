@@ -7,7 +7,6 @@ which only touch shared state under self.lock.
 """
 import colorsys
 import errno
-import fcntl
 import glob
 import math
 import os
@@ -26,6 +25,7 @@ WINDOWS = sys.platform == "win32"
 if WINDOWS:
     from .winpad import VirtualPad, uinput_available  # noqa: F401 (re-exported)
 else:
+    import fcntl
     from .virtualpad import VirtualPad, uinput_available  # noqa: F401 (re-exported)
 
 SONY = 0x054C

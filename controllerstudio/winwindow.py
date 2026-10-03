@@ -19,6 +19,7 @@ APP_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 URL = "http://127.0.0.1:%s/" % os.environ.get("CSP_PORT", "8765")
 TITLE = "Controller Studio Pro"
 MIN_W, MIN_H = 900, 600
+LOG = os.path.join(os.environ.get("LOCALAPPDATA", APP_DIR), "controller-studio-pro", "server.log")
 
 user32 = ctypes.windll.user32
 dwmapi = ctypes.windll.dwmapi
@@ -35,6 +36,7 @@ for name, res, args in (
     ("LoadImageW", wintypes.HANDLE, (wintypes.HINSTANCE, wintypes.LPCWSTR, wintypes.UINT,
                                      ctypes.c_int, ctypes.c_int, wintypes.UINT)),
     ("SendMessageW", wintypes.LPARAM, (wintypes.HWND, wintypes.UINT, wintypes.WPARAM, wintypes.LPARAM)),
+    ("MessageBoxW", ctypes.c_int, (wintypes.HWND, wintypes.LPCWSTR, wintypes.LPCWSTR, wintypes.UINT)),
 ):
     fn = getattr(user32, name)
     fn.restype, fn.argtypes = res, args
@@ -54,16 +56,34 @@ def service_up():
 
 
 def ensure_service():
+    """Start the background service if it isn't running. Returns False if it won't start."""
     if service_up():
-        return
+        return True
     pythonw = os.path.join(os.path.dirname(sys.executable), "pythonw.exe")
-    subprocess.Popen([pythonw if os.path.exists(pythonw) else sys.executable, "-m", "controllerstudio.server"],
-                     cwd=APP_DIR, creationflags=0x00000008 | 0x00000200 | 0x08000000,  # detached, own group, no console
-                     stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    for _ in range(50):
+    os.makedirs(os.path.dirname(LOG), exist_ok=True)
+    with open(LOG, "w", encoding="utf-8") as log:  # pythonw has no console, so keep its errors here
+        proc = subprocess.Popen(
+            [pythonw if os.path.exists(pythonw) else sys.executable, "-m", "controllerstudio.server"],
+            cwd=APP_DIR, creationflags=0x00000008 | 0x00000200 | 0x08000000,  # detached, own group, no console
+            stdin=subprocess.DEVNULL, stdout=log, stderr=log)
+    for _ in range(100):
         if service_up():
-            return
+            return True
+        if proc.poll() is not None:
+            break
         time.sleep(0.1)
+    return service_up()
+
+
+def service_failed():
+    try:
+        with open(LOG, encoding="utf-8", errors="replace") as f:
+            detail = f.read()[-1500:].strip()
+    except OSError:
+        detail = ""
+    user32.MessageBoxW(None, "The Controller Studio Pro background service didn't start.\n\n"
+                       + (detail or "It exited without an error message.") + f"\n\nLog: {LOG}",
+                       TITLE, 0x10)  # MB_ICONERROR
 
 
 def system_flag(action):
@@ -210,7 +230,9 @@ def main():
         ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("nomad9021.ControllerStudioPro")
     except (AttributeError, OSError):
         pass
-    ensure_service()
+    if not ensure_service():
+        service_failed()
+        return
     query = {
         "os": "win",
         "hc": "1" if high_contrast() else "0",
