@@ -1,0 +1,78 @@
+<UserControl x:Class="ControllerStudioPro.Pages.PresetPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:p="clr-namespace:ControllerStudioPro.Pages">
+    <StackPanel>
+        <UniformGrid x:Name="TriggerGrid" Columns="2">
+            <p:TriggerCard x:Name="L2Card" Margin="0,0,6,0" />
+            <p:TriggerCard x:Name="R2Card" Margin="6,0,0,0" />
+        </UniformGrid>
+
+        <Border Style="{StaticResource Card}">
+            <StackPanel>
+                <TextBlock Text="Preset" Style="{StaticResource CardTitle}" />
+                <Grid Style="{StaticResource Row}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
+                        <TextBlock Text="Effects react to" Style="{StaticResource Strong}" />
+                        <TextBlock x:Name="SourceHint" Style="{StaticResource Hint}" />
+                    </StackPanel>
+                    <ListBox Grid.Column="1" Style="{StaticResource Segmented}" SelectedValue="{Binding Telemetry}"
+                             AutomationProperties.Name="Effects react to">
+                        <ListBoxItem Tag="none" Content="Your Inputs" />
+                        <ListBoxItem Tag="game" Content="Game Data" />
+                    </ListBox>
+                </Grid>
+
+                <StackPanel Visibility="{Binding Telemetry, Converter={StaticResource ShowIf}, ConverterParameter=game}">
+                    <Grid Style="{StaticResource Row}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock x:Name="TeleState" Style="{StaticResource Strong}" Text="Waiting for game data…" />
+                            <TextBlock x:Name="TeleHelp" Style="{StaticResource Hint}" />
+                        </StackPanel>
+                        <Ellipse x:Name="TeleDot" Grid.Column="1" Width="10" Height="10"
+                                 Fill="{DynamicResource ControlStrongFillColorDisabledBrush}" />
+                    </Grid>
+                    <Expander Margin="0,4,0,6" HorizontalAlignment="Stretch">
+                        <Expander.Header>
+                            <StackPanel>
+                                <TextBlock Text="Set up game data" Style="{StaticResource Strong}" />
+                                <TextBlock Style="{StaticResource Hint}">
+                                    <Run Text="Point the game's telemetry at" /> <Run x:Name="IpHeader" FontWeight="SemiBold" />.
+                                </TextBlock>
+                            </StackPanel>
+                        </Expander.Header>
+                        <StackPanel x:Name="GameSetup" Margin="4" />
+                    </Expander>
+                </StackPanel>
+
+                <Grid Style="{StaticResource Row}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
+                        <TextBlock Text="Preset Color" Style="{StaticResource Strong}" />
+                        <TextBlock Style="{StaticResource Hint}" Text="The light bar uses this when Lighting is set to Match Preset." />
+                    </StackPanel>
+                    <TextBox Grid.Column="1" x:Name="ColorHex" Width="96" Margin="0,0,8,0" VerticalAlignment="Center"
+                             LostFocus="ColorHex_Commit" KeyDown="ColorHex_KeyDown" AutomationProperties.Name="Preset color (hex)" />
+                    <Button Grid.Column="2" Click="PickColor_Click" Padding="6" ToolTip="Choose a color"
+                            AutomationProperties.Name="Choose preset color">
+                        <Border Width="40" Height="22" CornerRadius="4" BorderThickness="1"
+                                BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+                                Background="{Binding Lightbar, Converter={StaticResource HexBrush}}" />
+                    </Button>
+                </Grid>
+            </StackPanel>
+        </Border>
+    </StackPanel>
+</UserControl>

@@ -1,0 +1,253 @@
+<UserControl x:Class="ControllerStudioPro.Pages.TriggerCard"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="clr-namespace:ControllerStudioPro.Controls">
+    <Border Style="{StaticResource Card}" Padding="18,14">
+        <DockPanel>
+            <!-- Header: name, live pull, reactions on/off -->
+            <Grid DockPanel.Dock="Top" Margin="0,0,0,6">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock x:Name="SideName" Text="L2" FontSize="22" FontWeight="Bold" VerticalAlignment="Center" />
+                <Border Grid.Column="1" Style="{StaticResource Pill}" Margin="10,0,0,0">
+                    <TextBlock x:Name="PullText" Text="0%" FontSize="12" MinWidth="30" TextAlignment="Center"
+                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                </Border>
+                <CheckBox Grid.Column="3" Style="{StaticResource ToggleSwitch}" Content="Reactions"
+                          IsChecked="{Binding ReactionsOn}"
+                          ToolTip="Turn this trigger's reactions (like the slam buzz or shift kick) on or off" />
+            </Grid>
+
+            <TabControl x:Name="Tabs">
+                <!-- ============ Feel ============ -->
+                <TabItem Header="Feel">
+                    <StackPanel Margin="0,14,0,0">
+                        <ListBox Style="{StaticResource Segmented}" SelectedValue="{Binding Feel.Type}"
+                                 AutomationProperties.Name="Feel">
+                            <ListBoxItem Tag="off" Content="Off" />
+                            <ListBoxItem Tag="zones" Content="Zones" />
+                            <ListBoxItem Tag="smooth" Content="Smooth" />
+                            <ListBoxItem Tag="click" Content="Click" />
+                            <ListBoxItem Tag="vibrate" Content="Vibrate" />
+                        </ListBox>
+
+                        <TextBlock Style="{StaticResource Hint}" Margin="0,14,0,0"
+                                   Text="The trigger moves freely, like a normal controller."
+                                   Visibility="{Binding Feel.Type, Converter={StaticResource ShowIf}, ConverterParameter=off}" />
+
+                        <StackPanel Margin="0,14,0,0"
+                                    Visibility="{Binding Feel.Type, Converter={StaticResource ShowIf}, ConverterParameter=zones}">
+                            <TextBlock Style="{StaticResource Hint}" Margin="0,0,0,10"
+                                       Text="Ten zones down the pull, each with its own resistance (0–8). Drag the bars, or click them and use the arrow keys." />
+                            <c:ZonesEditor Zones="{Binding Feel.Zones}" Pull="{Binding Pull}" />
+                            <Grid Margin="0,4,0,0">
+                                <TextBlock Style="{StaticResource Hint}" Text="Top of pull" />
+                                <TextBlock Style="{StaticResource Hint}" Text="Fully pressed" HorizontalAlignment="Right" />
+                            </Grid>
+                            <WrapPanel Margin="0,10,0,0">
+                                <Button Content="Even" Tag="0,3,3,3,3,3,3,3,3,3" Click="Shape_Click" Margin="0,0,6,6" />
+                                <Button Content="Progressive" Tag="0,0,1,2,2,3,4,5,5,6" Click="Shape_Click" Margin="0,0,6,6" />
+                                <Button Content="Late Wall" Tag="0,0,0,0,1,8,8,8,8,8" Click="Shape_Click" Margin="0,0,6,6" />
+                                <Button Content="Early Wall" Tag="0,2,6,8,8,8,8,8,8,8" Click="Shape_Click" Margin="0,0,6,6" />
+                                <Button Tag="-1" Click="Nudge_Click" Margin="0,0,6,6" ToolTip="Lighter" AutomationProperties.Name="Lighter">
+                                    <TextBlock Style="{StaticResource Icon}" Text="&#xE738;" FontSize="12" />
+                                </Button>
+                                <Button Tag="1" Click="Nudge_Click" Margin="0,0,6,6" ToolTip="Heavier" AutomationProperties.Name="Heavier">
+                                    <TextBlock Style="{StaticResource Icon}" Text="&#xE710;" FontSize="12" />
+                                </Button>
+                            </WrapPanel>
+                        </StackPanel>
+
+                        <StackPanel Margin="0,14,0,0"
+                                    Visibility="{Binding Feel.Type, Converter={StaticResource ShowIf}, ConverterParameter=smooth}">
+                            <TextBlock Style="{StaticResource Hint}" Margin="0,0,0,8"
+                                       Text="One continuous resistance with fine control over where it starts and how strong it is." />
+                            <c:SliderRow Label="Starts at" Minimum="0" Maximum="95" Format="pct" Value="{Binding Feel.Smooth.Start}" />
+                            <c:SliderRow Label="Force" Minimum="1" Maximum="100" Format="pct" Value="{Binding Feel.Smooth.Force}" />
+                        </StackPanel>
+
+                        <StackPanel Margin="0,14,0,0"
+                                    Visibility="{Binding Feel.Type, Converter={StaticResource ShowIf}, ConverterParameter=click}">
+                            <TextBlock Style="{StaticResource Hint}" Margin="0,0,0,8"
+                                       Text="A wall you push through with a click, like a gun trigger or a detent." />
+                            <c:SliderRow Label="Wall at" Minimum="2" Maximum="7" Format="zone" Value="{Binding Feel.Click.Start}" />
+                            <c:SliderRow Label="Breaks at" Minimum="3" Maximum="8" Format="zone" Value="{Binding Feel.Click.End}" />
+                            <c:SliderRow Label="Force" Minimum="1" Maximum="8" Value="{Binding Feel.Click.Force}" />
+                        </StackPanel>
+
+                        <StackPanel Margin="0,14,0,0"
+                                    Visibility="{Binding Feel.Type, Converter={StaticResource ShowIf}, ConverterParameter=vibrate}">
+                            <TextBlock Style="{StaticResource Hint}" Margin="0,0,0,8"
+                                       Text="A constant vibration in the trigger from a point in the pull." />
+                            <c:SliderRow Label="From" Minimum="0" Maximum="9" Format="zone" Value="{Binding Feel.Vibrate.Start}" />
+                            <c:SliderRow Label="Strength" Minimum="1" Maximum="8" Value="{Binding Feel.Vibrate.Amplitude}" />
+                            <c:SliderRow Label="Rate" Minimum="1" Maximum="120" Format="hz" Value="{Binding Feel.Vibrate.Freq}" />
+                        </StackPanel>
+
+                        <Button HorizontalAlignment="Right" Margin="0,12,0,0" Click="FeelIt_Click"
+                                ToolTip="Play this feel on the trigger for a few seconds">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Style="{StaticResource Icon}" Text="&#xE768;" FontSize="12" Margin="0,0,8,0" />
+                                <TextBlock Text="Feel It" />
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+                </TabItem>
+
+                <!-- ============ Reactions ============ -->
+                <TabItem Header="Reactions">
+                    <StackPanel Margin="0,14,0,0">
+                        <TextBlock Style="{StaticResource Hint}"
+                                   Text="Reactions take over the trigger while they're active. When several are active, the one highest in the list wins." />
+                        <Border Margin="0,10,0,0" Padding="12,8" CornerRadius="6"
+                                Background="{DynamicResource SystemFillColorCautionBackgroundBrush}"
+                                Visibility="{Binding ReactionsOn, Converter={StaticResource Collapsed}}">
+                            <TextBlock TextWrapping="Wrap"
+                                       Text="Reactions are off for this trigger. Turn them back on with the Reactions switch above." />
+                        </Border>
+
+                        <ItemsControl x:Name="ReactionList" ItemsSource="{Binding Reactions}" Margin="0,6,0,0">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Expander Margin="0,6,0,0" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+                                        <Expander.Header>
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto" />
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                </Grid.ColumnDefinitions>
+                                                <CheckBox Style="{StaticResource ToggleSwitch}" IsChecked="{Binding Enabled}"
+                                                          Margin="0,0,12,0" AutomationProperties.Name="Reaction on" />
+                                                <TextBlock Grid.Column="1" Text="{Binding Summary}" VerticalAlignment="Center"
+                                                           TextTrimming="CharacterEllipsis" />
+                                                <Ellipse Grid.Column="2" Width="9" Height="9" Margin="8,0,4,0"
+                                                         Fill="{DynamicResource SystemFillColorSuccessBrush}"
+                                                         Visibility="{Binding Firing, Converter={StaticResource Visible}}"
+                                                         ToolTip="Active now" />
+                                            </Grid>
+                                        </Expander.Header>
+                                        <StackPanel Margin="2,4,2,2">
+                                            <Grid Margin="0,2,0,6">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="110" />
+                                                    <ColumnDefinition Width="*" />
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Text="When" VerticalAlignment="Center" />
+                                                <ComboBox Grid.Column="1" SelectedValuePath="Tag" SelectedValue="{Binding When}"
+                                                          HorizontalAlignment="Stretch" AutomationProperties.Name="When">
+                                                    <ComboBoxItem Tag="buttons" Content="Buttons are pressed" />
+                                                    <ComboBoxItem Tag="slam" Content="The trigger is slammed" />
+                                                    <ComboBoxItem Tag="held" Content="The trigger is held past a point" />
+                                                    <ComboBoxItem Tag="rumble" Content="The game rumbles the controller" />
+                                                    <ComboBoxItem Tag="gear" Content="Game data: gear changes" />
+                                                    <ComboBoxItem Tag="abs" Content="Game data: wheels lock up" />
+                                                    <ComboBoxItem Tag="wheelspin" Content="Game data: wheelspin" />
+                                                    <ComboBoxItem Tag="redline" Content="Game data: near the redline" />
+                                                </ComboBox>
+                                            </Grid>
+                                            <WrapPanel Margin="110,0,0,4" Loaded="Chips_Loaded"
+                                                       Visibility="{Binding When, Converter={StaticResource ShowIf}, ConverterParameter=buttons}" />
+                                            <StackPanel Visibility="{Binding When, Converter={StaticResource ShowIf}, ConverterParameter=slam}">
+                                                <c:SliderRow Label="From below" Minimum="0" Maximum="80" Format="pct" Value="{Binding Slam.From}" />
+                                                <c:SliderRow Label="To above" Minimum="20" Maximum="100" Format="pct" Value="{Binding Slam.To}" />
+                                                <c:SliderRow Label="Within" Minimum="50" Maximum="500" Step="10" Format="ms" Value="{Binding Slam.Within}" />
+                                            </StackPanel>
+                                            <c:SliderRow Label="Past" Minimum="5" Maximum="100" Format="pct" Value="{Binding Held.Above}"
+                                                         Visibility="{Binding When, Converter={StaticResource ShowIf}, ConverterParameter=held}" />
+                                            <StackPanel Visibility="{Binding When, Converter={StaticResource ShowIf}, ConverterParameter=rumble}">
+                                                <c:SliderRow Label="Rumble over" Minimum="1" Maximum="100" Format="pct" Value="{Binding Rumble.Above}" />
+                                                <CheckBox Style="{StaticResource ToggleSwitch}" IsChecked="{Binding Rumble.Scale}"
+                                                          Content="Strength follows how hard the game rumbles" Margin="110,6,0,4"
+                                                          HorizontalAlignment="Left" />
+                                                <TextBlock Style="{StaticResource Hint}" Margin="110,2,0,4"
+                                                           Visibility="{Binding VirtualOn, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource Collapsed}}"
+                                                           Text="Needs the Virtual Controller (Output) so Controller Studio Pro can see the game's rumble." />
+                                            </StackPanel>
+                                            <Grid Margin="0,6">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="110" />
+                                                    <ColumnDefinition Width="*" />
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Text="Do" VerticalAlignment="Center" />
+                                                <ListBox Grid.Column="1" Style="{StaticResource Segmented}" SelectedValue="{Binding Effect.Type}"
+                                                         AutomationProperties.Name="Effect">
+                                                    <ListBoxItem Tag="kick" Content="Kick" />
+                                                    <ListBoxItem Tag="buzz" Content="Buzz" />
+                                                    <ListBoxItem Tag="wall" Content="Wall" />
+                                                </ListBox>
+                                            </Grid>
+                                            <c:SliderRow Label="Strength" Minimum="1" Maximum="8" Value="{Binding Effect.Strength}" />
+                                            <c:SliderRow Label="From" Minimum="0" Maximum="9" Format="zone" Value="{Binding Effect.Start}" />
+                                            <c:SliderRow Label="Rate" Minimum="1" Maximum="120" Format="hz" Value="{Binding Effect.Freq}"
+                                                         Visibility="{Binding Effect.Type, Converter={StaticResource ShowIf}, ConverterParameter=buzz}" />
+                                            <c:SliderRow Label="Length" Minimum="10" Maximum="1000" Step="5" Format="ms" Value="{Binding Effect.DurationMs}"
+                                                         Visibility="{Binding When, Converter={StaticResource ShowIf}, ConverterParameter=buttons|gear|slam}" />
+                                            <WrapPanel HorizontalAlignment="Right" Margin="0,10,0,0">
+                                                <Button Click="MoveUp_Click" Margin="0,0,6,0" ToolTip="Move up" AutomationProperties.Name="Move up">
+                                                    <TextBlock Style="{StaticResource Icon}" Text="&#xE70E;" FontSize="12" />
+                                                </Button>
+                                                <Button Click="MoveDown_Click" Margin="0,0,6,0" ToolTip="Move down" AutomationProperties.Name="Move down">
+                                                    <TextBlock Style="{StaticResource Icon}" Text="&#xE70D;" FontSize="12" />
+                                                </Button>
+                                                <Button Click="DeleteReaction_Click" Margin="0,0,6,0">
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <TextBlock Style="{StaticResource Icon}" Text="&#xE74D;" FontSize="12" Margin="0,0,8,0" />
+                                                        <TextBlock Text="Delete" />
+                                                    </StackPanel>
+                                                </Button>
+                                                <Button Click="FeelReaction_Click">
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <TextBlock Style="{StaticResource Icon}" Text="&#xE768;" FontSize="12" Margin="0,0,8,0" />
+                                                        <TextBlock Text="Feel It" />
+                                                    </StackPanel>
+                                                </Button>
+                                            </WrapPanel>
+                                        </StackPanel>
+                                    </Expander>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <Button Click="AddReaction_Click" HorizontalAlignment="Left" Margin="0,10,0,0">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Style="{StaticResource Icon}" Text="&#xE710;" FontSize="12" Margin="0,0,8,0" />
+                                <TextBlock Text="Add Reaction" />
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+                </TabItem>
+
+                <!-- ============ Throw ============ -->
+                <TabItem Header="Throw">
+                    <StackPanel Margin="0,14,0,0">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <c:ThrowCurve Output="{Binding Output}" Pull="{Binding Pull}" Margin="0,0,20,8" VerticalAlignment="Top" />
+                            <StackPanel Grid.Column="1">
+                                <c:SliderRow Label="Dead zone" Minimum="0" Maximum="50" Format="pct" Value="{Binding Output.Deadzone}" />
+                                <c:SliderRow Label="100% at" Minimum="20" Maximum="100" Format="pct" Value="{Binding Output.FullAt}" />
+                                <c:SliderRow Label="Response" Minimum="-100" Maximum="100" Step="5" Format="curve" Value="{Binding Output.Curve}" />
+                                <c:SliderRow Label="Max output" Minimum="10" Maximum="100" Format="pct" Value="{Binding Output.Max}" />
+                                <Button Content="Reset" HorizontalAlignment="Right" Margin="0,8,0,0" Click="ResetThrow_Click" />
+                            </StackPanel>
+                        </Grid>
+                        <TextBlock Style="{StaticResource Hint}" Margin="0,8,0,0"
+                                   Visibility="{Binding VirtualOn, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource Collapsed}}">
+                            <Run Text="Throw changes reach games when the" />
+                            <Hyperlink Click="GotoOutput_Click">Virtual Controller</Hyperlink>
+                            <Run Text="is on." />
+                        </TextBlock>
+                    </StackPanel>
+                </TabItem>
+            </TabControl>
+        </DockPanel>
+    </Border>
+</UserControl>

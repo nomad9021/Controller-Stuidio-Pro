@@ -1,0 +1,42 @@
+name: Windows app
+
+on:
+  push:
+    branches: [main]
+    paths: ["windows/**", ".github/workflows/windows.yml"]
+    tags: ["v*"]
+  pull_request:
+    paths: ["windows/**"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Test the engine against the Python version
+        run: dotnet test windows/tests/ControllerStudio.Tests -c Release
+
+      - name: Build ControllerStudioPro.exe
+        run: dotnet publish windows/src/ControllerStudioPro -c Release -o out
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ControllerStudioPro
+          path: out/ControllerStudioPro.exe
+
+      - name: Publish the release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: out/ControllerStudioPro.exe
+          make_latest: true
+          generate_release_notes: true

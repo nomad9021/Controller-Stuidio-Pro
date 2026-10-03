@@ -1,0 +1,114 @@
+<UserControl x:Class="ControllerStudioPro.Pages.LightingPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="clr-namespace:ControllerStudioPro.Controls">
+    <StackPanel>
+        <Border Style="{StaticResource Card}" Padding="16,24,16,16">
+            <StackPanel>
+                <Viewbox Height="180" HorizontalAlignment="Center">
+                    <Canvas Width="520" Height="200">
+                        <Path x:Name="BarGlowL" StrokeThickness="26" StrokeStartLineCap="Round" StrokeEndLineCap="Round" Opacity="0.35"
+                              Data="M160,56 C154,86 154,116 162,148">
+                            <Path.Effect><BlurEffect Radius="18" /></Path.Effect>
+                        </Path>
+                        <Path x:Name="BarGlowR" StrokeThickness="26" StrokeStartLineCap="Round" StrokeEndLineCap="Round" Opacity="0.35"
+                              Data="M360,56 C366,86 366,116 358,148">
+                            <Path.Effect><BlurEffect Radius="18" /></Path.Effect>
+                        </Path>
+                        <Path Data="M120,40 C80,40 58,52 46,80 L14,190 L506,190 L474,80 C462,52 440,40 400,40 Z"
+                              Fill="{DynamicResource ControlFillColorSecondaryBrush}"
+                              Stroke="{DynamicResource ControlStrongFillColorDefaultBrush}" StrokeThickness="2" />
+                        <Rectangle Canvas.Left="168" Canvas.Top="44" Width="184" Height="96" RadiusX="16" RadiusY="16"
+                                   Fill="{DynamicResource ControlFillColorDefaultBrush}"
+                                   Stroke="{DynamicResource ControlStrongFillColorDefaultBrush}" StrokeThickness="1.5" />
+                        <Path x:Name="BarL" StrokeThickness="6" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                              Data="M160,56 C154,86 154,116 162,148" />
+                        <Path x:Name="BarR" StrokeThickness="6" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                              Data="M360,56 C366,86 366,116 358,148" />
+                        <StackPanel x:Name="Leds" Canvas.Left="236" Canvas.Top="152" Orientation="Horizontal">
+                            <Rectangle Width="8" Height="3" RadiusX="1.5" RadiusY="1.5" Margin="0,0,4,0" />
+                            <Rectangle Width="8" Height="3" RadiusX="1.5" RadiusY="1.5" Margin="0,0,4,0" />
+                            <Rectangle Width="8" Height="3" RadiusX="1.5" RadiusY="1.5" Margin="0,0,4,0" />
+                            <Rectangle Width="8" Height="3" RadiusX="1.5" RadiusY="1.5" Margin="0,0,4,0" />
+                            <Rectangle Width="8" Height="3" RadiusX="1.5" RadiusY="1.5" />
+                        </StackPanel>
+                    </Canvas>
+                </Viewbox>
+                <TextBlock x:Name="Caption" Style="{StaticResource Hint}" HorizontalAlignment="Center" Margin="0,12,0,0" />
+            </StackPanel>
+        </Border>
+
+        <Border Style="{StaticResource Card}">
+            <StackPanel>
+                <Grid Style="{StaticResource Row}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
+                        <TextBlock Text="Light Bar" Style="{StaticResource Strong}" />
+                        <TextBlock Style="{StaticResource Hint}" Text="Match the preset in use, keep one color all the time, or turn it off." />
+                    </StackPanel>
+                    <ListBox Grid.Column="1" Style="{StaticResource Segmented}" SelectedValue="{Binding Mode}"
+                             AutomationProperties.Name="Light bar">
+                        <ListBoxItem Tag="preset" Content="Match Preset" />
+                        <ListBoxItem Tag="custom" Content="Custom Color" />
+                        <ListBoxItem Tag="off" Content="Off" />
+                    </ListBox>
+                </Grid>
+
+                <StackPanel Margin="0,6" Visibility="{Binding Mode, Converter={StaticResource ShowIf}, ConverterParameter=custom}">
+                    <TextBlock Text="Color" Style="{StaticResource Strong}" Margin="0,0,0,8" />
+                    <WrapPanel x:Name="Swatches" />
+                    <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                        <Button Click="PickColor_Click" Margin="0,0,8,0">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Style="{StaticResource Icon}" Text="&#xE790;" FontSize="14" Margin="0,0,8,0" />
+                                <TextBlock Text="More Colors…" />
+                            </StackPanel>
+                        </Button>
+                        <TextBox x:Name="Hex" Width="96" VerticalAlignment="Center" LostFocus="Hex_Commit" KeyDown="Hex_KeyDown"
+                                 AutomationProperties.Name="Hex color" />
+                    </StackPanel>
+                </StackPanel>
+
+                <Grid Style="{StaticResource Row}" Visibility="{Binding Mode, Converter={StaticResource HideIf}, ConverterParameter=off}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="Effect" Style="{StaticResource Strong}" VerticalAlignment="Center" />
+                    <ListBox Grid.Column="1" Style="{StaticResource Segmented}" SelectedValue="{Binding Effect}"
+                             AutomationProperties.Name="Light effect">
+                        <ListBoxItem Tag="solid" Content="Solid" />
+                        <ListBoxItem Tag="breathe" Content="Breathe" />
+                        <ListBoxItem Tag="rainbow" Content="Rainbow" />
+                        <ListBoxItem Tag="battery" Content="Battery Level" />
+                    </ListBox>
+                </Grid>
+                <c:SliderRow Label="Speed" Minimum="1" Maximum="10" Value="{Binding Speed}" Margin="0,4"
+                             Visibility="{Binding Effect, Converter={StaticResource ShowIf}, ConverterParameter=breathe|rainbow}" />
+                <c:SliderRow Label="Brightness" Minimum="5" Maximum="100" Format="pct" Value="{Binding Brightness}" Margin="0,4"
+                             Visibility="{Binding Mode, Converter={StaticResource HideIf}, ConverterParameter=off}" />
+
+                <Grid Style="{StaticResource Row}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
+                        <TextBlock Text="Player Lights" Style="{StaticResource Strong}" />
+                        <TextBlock Style="{StaticResource Hint}" Text="The small white lights under the touchpad." />
+                    </StackPanel>
+                    <ListBox Grid.Column="1" Style="{StaticResource Segmented}" SelectedValue="{Binding PlayerLeds}"
+                             AutomationProperties.Name="Player lights">
+                        <ListBoxItem Tag="off" Content="Off" />
+                        <ListBoxItem Tag="center" Content="Center" />
+                        <ListBoxItem Tag="edges" Content="Edges" />
+                        <ListBoxItem Tag="all" Content="All" />
+                    </ListBox>
+                </Grid>
+            </StackPanel>
+        </Border>
+    </StackPanel>
+</UserControl>

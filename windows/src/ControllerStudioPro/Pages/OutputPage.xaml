@@ -1,0 +1,104 @@
+<UserControl x:Class="ControllerStudioPro.Pages.OutputPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <StackPanel>
+        <Border Style="{StaticResource Card}">
+            <StackPanel>
+                <Grid Style="{StaticResource Row}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Margin="0,0,24,0">
+                        <TextBlock Text="Virtual Controller" Style="{StaticResource Strong}" FontSize="15" />
+                        <TextBlock Style="{StaticResource Hint}"
+                                   Text="Games get a remapped copy of your controller, so each preset's Throw settings and the button mapping below take effect. Games see it as an Xbox controller; the touchpad and motion aren't passed on." />
+                    </StackPanel>
+                    <CheckBox x:Name="VirtualSwitch" Grid.Column="1" Style="{StaticResource ToggleSwitch}"
+                              IsChecked="{Binding Virtual}" AutomationProperties.Name="Virtual controller" />
+                </Grid>
+                <Separator Margin="0,6" />
+                <Grid Style="{StaticResource Row}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Margin="0,0,24,0">
+                        <TextBlock Text="Driver" Style="{StaticResource Strong}" />
+                        <TextBlock x:Name="AccessText" Style="{StaticResource Hint}" />
+                    </StackPanel>
+                    <Border x:Name="AccessPill" Grid.Column="1" Style="{StaticResource Pill}">
+                        <TextBlock x:Name="AccessPillText" FontSize="12" FontWeight="SemiBold" />
+                    </Border>
+                </Grid>
+                <Grid Style="{StaticResource Row}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Margin="0,0,24,0">
+                        <TextBlock Text="Moonlight" Style="{StaticResource Strong}" />
+                        <TextBlock x:Name="MoonText" Style="{StaticResource Hint}" />
+                    </StackPanel>
+                    <Border x:Name="MoonPill" Grid.Column="1" Style="{StaticResource Pill}">
+                        <TextBlock x:Name="MoonPillText" FontSize="12" FontWeight="SemiBold" />
+                    </Border>
+                </Grid>
+                <Grid Style="{StaticResource Row}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Margin="0,0,24,0">
+                        <TextBlock Text="Status" Style="{StaticResource Strong}" />
+                        <TextBlock x:Name="StateText" Style="{StaticResource Hint}" />
+                    </StackPanel>
+                    <Border x:Name="StatePill" Grid.Column="1" Style="{StaticResource Pill}">
+                        <TextBlock x:Name="StatePillText" FontSize="12" FontWeight="SemiBold" />
+                    </Border>
+                </Grid>
+            </StackPanel>
+        </Border>
+
+        <Border Style="{StaticResource Card}">
+            <StackPanel>
+                <TextBlock Text="Extra Buttons" Style="{StaticResource CardTitle}" Margin="0,0,0,2" />
+                <TextBlock Style="{StaticResource Hint}" Margin="0,0,0,8"
+                           Text="Send the Edge's back paddles and Fn buttons to games as another button. They can still trigger reactions either way." />
+                <StackPanel x:Name="MapRows" />
+            </StackPanel>
+        </Border>
+
+        <Border Style="{StaticResource Card}">
+            <StackPanel>
+                <TextBlock Text="App" Style="{StaticResource CardTitle}" Margin="0,0,0,2" />
+                <Grid Style="{StaticResource Row}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Margin="0,0,24,0">
+                        <TextBlock Text="Start with Windows" Style="{StaticResource Strong}" />
+                        <TextBlock Style="{StaticResource Hint}"
+                                   Text="Starts quietly in the notification area when you sign in, so effects and lighting are ready." />
+                    </StackPanel>
+                    <CheckBox x:Name="StartupSwitch" Grid.Column="1" Style="{StaticResource ToggleSwitch}"
+                              Click="Startup_Click" AutomationProperties.Name="Start with Windows" />
+                </Grid>
+                <Grid Style="{StaticResource Row}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Margin="0,0,24,0">
+                        <TextBlock Text="Keep running when closed" Style="{StaticResource Strong}" />
+                        <TextBlock Style="{StaticResource Hint}"
+                                   Text="Closing the window leaves Controller Studio Pro in the notification area. Turn off to quit when the window closes (effects stop too)." />
+                    </StackPanel>
+                    <CheckBox x:Name="BackgroundSwitch" Grid.Column="1" Style="{StaticResource ToggleSwitch}"
+                              AutomationProperties.Name="Keep running when closed" />
+                </Grid>
+            </StackPanel>
+        </Border>
+    </StackPanel>
+</UserControl>
