@@ -14,13 +14,19 @@ import os
 import selectors
 import socket
 import struct
+import sys
 import threading
 import time
 import traceback
 import zlib
 
 from .telemetry import PORTS, GameTelemetry
-from .virtualpad import VirtualPad, uinput_available  # noqa: F401 (re-exported)
+
+WINDOWS = sys.platform == "win32"
+if WINDOWS:
+    from .winpad import VirtualPad, uinput_available  # noqa: F401 (re-exported)
+else:
+    from .virtualpad import VirtualPad, uinput_available  # noqa: F401 (re-exported)
 
 SONY = 0x054C
 MODELS = {0x0CE6: "DualSense", 0x0DF2: "DualSense Edge"}
@@ -124,6 +130,36 @@ def remap(raw, out):
 
 # ---------------------------------------------------------------- device
 
+def output_report(common, bluetooth, seq):
+    """Wrap the 47 common output bytes in a USB (0x02) or Bluetooth (0x31) report."""
+    if not bluetooth:
+        return bytes([0x02]) + common
+    report = bytearray(78)
+    report[0] = 0x31
+    report[1] = (seq & 0x0F) << 4
+    report[2] = 0x10
+    report[3:50] = common
+    report[74:78] = struct.pack("<I", zlib.crc32(bytes([0xA2]) + report[:74]))
+    return bytes(report)
+
+
+def output_common(left=None, right=None, lightbar=None, player_leds=None):
+    common = bytearray(47)
+    if right is not None:
+        common[0] |= 0x04
+        common[10:21] = right
+    if left is not None:
+        common[0] |= 0x08
+        common[21:32] = left
+    if lightbar is not None:
+        common[1] |= 0x04
+        common[44:47] = bytes(lightbar)
+    if player_leds is not None:
+        common[1] |= 0x10
+        common[43] = player_leds
+    return common
+
+
 def find_device():
     for hr in sorted(glob.glob("/sys/class/hidraw/hidraw*")):
         hid_dir = os.path.realpath(os.path.join(hr, "device"))
@@ -162,31 +198,14 @@ class Device:
             except OSError:
                 self.ev = None
 
+    def read(self):
+        """One input report; raises BlockingIOError when none is waiting."""
+        return os.read(self.fd, 128)
+
     def send(self, left=None, right=None, lightbar=None, player_leds=None):
-        common = bytearray(47)
-        if right is not None:
-            common[0] |= 0x04
-            common[10:21] = right
-        if left is not None:
-            common[0] |= 0x08
-            common[21:32] = left
-        if lightbar is not None:
-            common[1] |= 0x04
-            common[44:47] = bytes(lightbar)
-        if player_leds is not None:
-            common[1] |= 0x10
-            common[43] = player_leds
-        if self.info["bluetooth"]:
-            report = bytearray(78)
-            report[0] = 0x31
-            report[1] = (self.seq & 0x0F) << 4
-            report[2] = 0x10
-            report[3:50] = common
-            self.seq += 1
-            report[74:78] = struct.pack("<I", zlib.crc32(bytes([0xA2]) + report[:74]))
-        else:
-            report = bytes([0x02]) + common
-        os.write(self.fd, report)
+        common = output_common(left, right, lightbar, player_leds)
+        os.write(self.fd, output_report(common, self.info["bluetooth"], self.seq))
+        self.seq += 1
 
     def grab(self, on):
         """Hide the real controller from other programs while the virtual one is used."""
@@ -223,6 +242,10 @@ class Device:
                     os.close(fd)
                 except OSError:
                     pass
+
+
+if WINDOWS:
+    from .winhid import Device, find_device  # noqa: E402,F811 (hidapi instead of hidraw)
 
 
 def parse_input(r):
@@ -296,8 +319,10 @@ class Engine(threading.Thread):
         self.vpad_active = False
         self.game = GameTelemetry()
         self.rumble_level = (0.0, 0.0)  # what the game is asking the controller to rumble
-        self._wake_r, self._wake_w = os.pipe()
-        os.set_blocking(self._wake_r, False)
+        # A socket pair rather than a pipe so it can be selected on Windows too.
+        self._wake_r, self._wake_w = socket.socketpair()
+        self._wake_r.setblocking(False)
+        self._wake_w.setblocking(False)
         self._refresh = True
 
     # ---- public API (any thread)
@@ -357,7 +382,7 @@ class Engine(threading.Thread):
 
     def _wake(self):
         try:
-            os.write(self._wake_w, b"x")
+            self._wake_w.send(b"x")
         except BlockingIOError:
             pass
 
@@ -367,7 +392,8 @@ class Engine(threading.Thread):
         socks = []
         for port in PORTS:
             sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            if not WINDOWS:  # on Windows this would let two programs split the packets
+                sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             try:
                 sock.bind(("0.0.0.0", port))
             except OSError:
@@ -457,7 +483,7 @@ class Engine(threading.Thread):
                 for key, _ in sel.select(timeout=1 / 120):
                     if key.data == "wake":
                         try:
-                            os.read(self._wake_r, 64)
+                            self._wake_r.recv(64)
                         except BlockingIOError:
                             pass
                     elif isinstance(key.data, tuple):
@@ -476,7 +502,7 @@ class Engine(threading.Thread):
                     else:
                         while True:
                             try:
-                                r = os.read(dev.fd, 128)
+                                r = dev.read()
                             except BlockingIOError:
                                 break
                             if not r:

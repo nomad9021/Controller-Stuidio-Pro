@@ -101,6 +101,8 @@ svg { fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round
   overflow: hidden;
 }
 :root.maximized { --window-radius: 0px; }
+:root.win { --window-radius: 0px; }                 /* Windows 11 rounds the window itself */
+:root.win .glass-card { display: none; }
 
 .app > * { position: relative; z-index: 1; }
 

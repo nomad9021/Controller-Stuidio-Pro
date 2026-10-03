@@ -3,6 +3,7 @@ import json
 import os
 import subprocess
 import re
+import socket
 import sys
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -28,6 +29,16 @@ MOONLIGHT_ENV = {
 
 def local_ips():
     """This machine's addresses, for the game data setup instructions."""
+    if eng.WINDOWS:
+        ips = []
+        try:
+            for info in socket.getaddrinfo(socket.gethostname(), None, socket.AF_INET):
+                ip = info[4][0]
+                if not ip.startswith(("127.", "169.254.")) and ip not in ips:
+                    ips.append(ip)
+        except OSError:
+            pass
+        return ips
     try:
         out = subprocess.run(["ip", "-4", "-o", "addr", "show", "scope", "global"],
                              capture_output=True, text=True, timeout=3).stdout
@@ -38,6 +49,8 @@ def local_ips():
 
 def moonlight_hidden():
     """True when Moonlight is set to ignore the real controller."""
+    if eng.WINDOWS:
+        return _user_env(next(iter(MOONLIGHT_ENV))) is not None
     try:
         out = subprocess.run(["flatpak", "override", "--user", "--show", MOONLIGHT],
                              capture_output=True, text=True, timeout=5).stdout
@@ -47,12 +60,44 @@ def moonlight_hidden():
 
 
 def set_moonlight_hidden(hide):
+    if eng.WINDOWS:
+        # Moonlight for Windows reads the same SDL settings from the user's environment.
+        for k, v in MOONLIGHT_ENV.items():
+            _set_user_env(k, v if hide else None)
+        return
     if hide:
         args = [f"--env={k}={v}" for k, v in MOONLIGHT_ENV.items()]
     else:
         args = [f"--unset-env={k}" for k in MOONLIGHT_ENV]
-    subprocess.run(["flatpak", "override", "--user", *args, MOONLIGHT],
-                   capture_output=True, timeout=10, check=False)
+    try:
+        subprocess.run(["flatpak", "override", "--user", *args, MOONLIGHT],
+                       capture_output=True, timeout=10, check=False)
+    except (OSError, subprocess.TimeoutExpired):
+        pass
+
+
+def _user_env(name):
+    import winreg
+    try:
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, "Environment") as key:
+            return winreg.QueryValueEx(key, name)[0]
+    except OSError:
+        return None
+
+
+def _set_user_env(name, value):
+    import ctypes
+    import winreg
+    with winreg.OpenKey(winreg.HKEY_CURRENT_USER, "Environment", 0, winreg.KEY_SET_VALUE) as key:
+        if value is None:
+            try:
+                winreg.DeleteValue(key, name)
+            except FileNotFoundError:
+                pass
+        else:
+            winreg.SetValueEx(key, name, 0, winreg.REG_SZ, value)
+    # Tell Explorer, so Moonlight started from the Start menu sees the change.
+    ctypes.windll.user32.SendMessageTimeoutW(0xFFFF, 0x001A, 0, "Environment", 0x0002, 2000, None)
 
 
 def test_effect(body):
@@ -101,6 +146,7 @@ class Handler(BaseHTTPRequestHandler):
     def _status(self):
         return dict(engine.snapshot(), active=store.active_id, presets=store.all(),
                     settings=store.settings, moonlight_hidden=moonlight_hidden(),
+                    platform="windows" if eng.WINDOWS else "linux",
                     app_dir=os.path.dirname(WEB), ips=local_ips(), hidden_builtins=store.hidden_count)
 
     def do_GET(self):
@@ -197,10 +243,12 @@ class Handler(BaseHTTPRequestHandler):
 
 
 def main():
+    # On Windows SO_REUSEADDR would let a second copy share the port; there it must fail instead.
+    ThreadingHTTPServer.allow_reuse_address = not eng.WINDOWS
+    httpd = ThreadingHTTPServer(("127.0.0.1", PORT), Handler)
     engine.set_preset(store.active())
     engine.set_settings(store.settings)
     engine.start()
-    httpd = ThreadingHTTPServer(("127.0.0.1", PORT), Handler)
     httpd.daemon_threads = True
     print(f"Controller Studio Pro service on http://127.0.0.1:{PORT}", file=sys.stderr)
     try:

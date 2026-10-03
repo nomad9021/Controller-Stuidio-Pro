@@ -2,11 +2,39 @@
 
 # Controller Studio Pro
 
-Adaptive triggers, lighting and a full controller tester for the **PlayStation DualSense** and **DualSense Edge** on Linux. It drives the controller directly, so the effects work everywhere, including streaming with Moonlight, where the PC never sees a real DualSense.
+Adaptive triggers, lighting and a full controller tester for the **PlayStation DualSense** and **DualSense Edge** on Linux and Windows. It drives the controller directly, so the effects work everywhere, including streaming with Moonlight, where the PC never sees a real DualSense.
 
 ![Preset editor](docs/preset.png)
 
 ## Install
+
+### Windows 10 / 11
+
+Open **PowerShell** (no admin needed) and run:
+
+```powershell
+irm https://raw.githubusercontent.com/nomad9021/Controller-Stuidio-Pro/main/install.ps1 | iex
+```
+
+The installer:
+- installs Python 3.13 for your user if you don't have 3.11 or newer, plus the WebView2 runtime if it's missing,
+- installs the **ViGEmBus** driver for the virtual controller (Windows asks for permission once),
+- puts the app in `%LOCALAPPDATA%\ControllerStudioPro` with its own Python environment (hidapi, pywebview),
+- starts the background service and starts it again at every sign-in,
+- adds **Controller Studio Pro** to the Start menu.
+
+Run the same command again to update. To uninstall:
+
+```powershell
+& ([scriptblock]::Create((irm https://raw.githubusercontent.com/nomad9021/Controller-Stuidio-Pro/main/install.ps1))) -Uninstall
+```
+
+Differences on Windows:
+- The window is solid rather than see-through glass.
+- With the virtual controller on, games can see both it and the real DualSense. If a game reacts twice, hide the real one with [HidHide](https://github.com/nefarius/HidHide). Turning the virtual controller on also sets the SDL variables that make Moonlight ignore the real controller.
+- The first time a game sends telemetry from another PC, Windows Firewall asks to allow Python. Allow it on private networks.
+
+### Linux
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/nomad9021/Controller-Stuidio-Pro/main/install.sh | bash
@@ -81,13 +109,16 @@ The window is see-through glass with a soft glow in your light bar colour. On KD
 - `controllerstudio/engine.py` reads the controller's raw HID reports and sends trigger, lighting and player-LED output reports over Bluetooth or USB. It also runs the reactions.
 - `controllerstudio/telemetry.py` parses game telemetry (Forza, F1, Codemasters, OutGauge).
 - `controllerstudio/virtualpad.py` creates the remapped virtual controller through `/dev/uinput` and forwards rumble.
+- On Windows, `controllerstudio/winhid.py` talks to the controller through hidapi, `controllerstudio/winpad.py` makes the virtual Xbox controller through ViGEmBus, and `controllerstudio/winwindow.py` is the WebView2 window (pywebview).
 - `controllerstudio/server.py` is a small local service on `127.0.0.1:8765` that runs the engine and serves the UI. It runs as the systemd user service `controller-studio-pro`.
 - `controller-studio-pro` is the GTK + WebKitGTK window.
 
-Settings and presets live in `~/.config/controller-studio-pro/presets.json`.
+Settings and presets live in `~/.config/controller-studio-pro/presets.json` (`%APPDATA%\controller-studio-pro\presets.json` on Windows).
 
 ## Troubleshooting
 
 - **"Controller not connected"**: press the PS button. Check that it's paired in your Bluetooth settings.
 - **No trigger effects**: make sure the udev rules are installed (`ls /etc/udev/rules.d/ | grep -i -e dualsense -e controller-studio`), then reconnect the controller.
 - **Service logs**: `journalctl --user -u controller-studio-pro -f`
+- **Windows, nothing happens**: check that the service is running by opening <http://127.0.0.1:8765> in a browser. To see its errors, run `%LOCALAPPDATA%\ControllerStudioPro\venv\Scripts\python.exe -m controllerstudio.server` from `%LOCALAPPDATA%\ControllerStudioPro\app`.
+- **Windows, the controller isn't found over Bluetooth**: remove it in Bluetooth settings and pair it again.

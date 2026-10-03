@@ -1,11 +1,15 @@
-"""Built-in presets, the user's edits, and app-wide settings (~/.config/controller-studio-pro/)."""
+"""Built-in presets, the user's edits, and app-wide settings (~/.config/controller-studio-pro/,
+%APPDATA%\\controller-studio-pro on Windows)."""
 import copy
 import json
 import os
 import re
 import threading
 
-_CONFIG_HOME = os.environ.get("XDG_CONFIG_HOME", os.path.expanduser("~/.config"))
+if os.name == "nt":
+    _CONFIG_HOME = os.environ.get("APPDATA", os.path.expanduser("~"))
+else:
+    _CONFIG_HOME = os.environ.get("XDG_CONFIG_HOME", os.path.expanduser("~/.config"))
 CONFIG_DIR = os.path.join(_CONFIG_HOME, "controller-studio-pro")
 STORE = os.path.join(CONFIG_DIR, "presets.json")
 _OLD_STORE = os.path.join(_CONFIG_HOME, "pad-studio", "presets.json")  # from before the rename

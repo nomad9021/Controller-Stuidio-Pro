@@ -5,6 +5,12 @@ const $$ = (s, el = document) => [...el.querySelectorAll(s)];
 const params = new URLSearchParams(location.search);
 if (params.get("hc") === "1") document.documentElement.classList.add("opaque");
 if (params.get("rm") === "1") document.documentElement.classList.add("reduce-motion");
+// Windows can't blur or see through a WebView2 window, so it gets the solid look.
+const WIN = params.get("os") === "win" || /^Win/.test(navigator.platform);
+if (WIN) document.documentElement.classList.add("win", "opaque");
+const START_HINT = WIN
+  ? "Can't reach the Controller Studio Pro service. Close this window and open Controller Studio Pro from the Start menu again."
+  : "Can't reach the Controller Studio Pro service. Start it with: systemctl --user start controller-studio-pro";
 
 const SHAPES = {
   linear: [0, 3, 3, 3, 3, 3, 3, 3, 3, 3],
@@ -588,7 +594,8 @@ function updateOutputStatus() {
     $("#o-access").textContent = "Controller Studio Pro can create virtual controllers.";
   } else {
     pill("#o-access-pill", "Needs setup", "warn");
-    $("#o-access").innerHTML = `Run the installer again, or run once in a terminal: <code>sudo cp ${status.app_dir}/udev/*.rules /etc/udev/rules.d/ &amp;&amp; sudo udevadm control --reload &amp;&amp; sudo udevadm trigger</code>`;
+    if (WIN) $("#o-access").textContent = "The ViGEmBus driver isn't installed. Run the installer again to add it.";
+    else $("#o-access").innerHTML = `Run the installer again, or run once in a terminal: <code>sudo cp ${status.app_dir}/udev/*.rules /etc/udev/rules.d/ &amp;&amp; sudo udevadm control --reload &amp;&amp; sudo udevadm trigger</code>`;
   }
   const hidden = status.moonlight_hidden;
   if (o.virtual) {
@@ -601,7 +608,12 @@ function updateOutputStatus() {
     $("#o-moon").textContent = "Moonlight uses your controller directly.";
   }
   if (!o.virtual) { pill("#o-state-pill", "Off", ""); $("#o-state").textContent = "Games get your controller as-is."; }
-  else if (v.active) { pill("#o-state-pill", "Running", "good"); $("#o-state").textContent = "“Controller Studio Pro Virtual Controller” is live with the active preset's throw settings."; }
+  else if (v.active) {
+    pill("#o-state-pill", "Running", "good");
+    $("#o-state").textContent = WIN
+      ? "A virtual Xbox controller is live with the active preset's throw settings. If a game reacts to both controllers, hide the real one with HidHide."
+      : "“Controller Studio Pro Virtual Controller” is live with the active preset's throw settings.";
+  }
   else if (v.error) { pill("#o-state-pill", "Error", "warn"); $("#o-state").textContent = v.error; }
   else { pill("#o-state-pill", "Waiting", ""); $("#o-state").textContent = "Starts when the controller connects."; }
 }
@@ -624,7 +636,7 @@ function updateDevice() {
     batt.setAttribute("aria-label", `Battery ${st.battery}%${charging ? ", charging" : ""}`);
   }
   $("#enabled").checked = live ? live.enabled : true;
-  if (!live) banner("Can't reach the Controller Studio Pro service. Start it with: systemctl --user start controller-studio-pro");
+  if (!live) banner(START_HINT);
   else if (!d) banner("Controller not connected. Press the PS button to wake it.");
   else banner("");
 }
@@ -816,7 +828,9 @@ function applyGlass() {
 }
 
 // Frameless window: the native host draws nothing, so the page provides drag, resize and buttons.
-const host = window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.win;
+// GTK window on Linux; pywebview (WebView2) on Windows.
+const host = (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.win) ||
+  (params.get("os") === "win" ? { postMessage: m => window.pywebview && window.pywebview.api.win(m) } : null);
 if (host) {
   document.documentElement.classList.add("framed");
   const NO_DRAG = "button, input, select, a, label, [role=slider], .seg, .nav-row, .profile, canvas, .card";
@@ -836,7 +850,7 @@ if (host) {
   if (params.get("nosplash") === "1") $("#splash").remove(); else playSplash();
   for (;;) {
     try { status = await api("GET", "/api/status"); applyGlass(); break; }
-    catch { banner("Can't reach the Controller Studio Pro service. Start it with: systemctl --user start controller-studio-pro"); await new Promise(r => setTimeout(r, 2000)); }
+    catch { banner(START_HINT); await new Promise(r => setTimeout(r, 2000)); }
   }
   let saved = decodeURIComponent(location.hash.slice(1)) || null;
   try { saved ??= localStorage.getItem("view"); } catch {}

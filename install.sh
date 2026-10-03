@@ -136,7 +136,7 @@ EOF
 }
 
 main() {
-  [ "$(uname -s)" = Linux ] || die "Controller Studio Pro runs on Linux only."
+  [ "$(uname -s)" = Linux ] || die "This installer is for Linux. On Windows use install.ps1 (see the README)."
   [ "${1:-}" = "--uninstall" ] && { uninstall; return; }
   install_deps
   fetch_app
